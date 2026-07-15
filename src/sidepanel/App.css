@@ -83,6 +83,57 @@
   color: var(--text);
 }
 
+.custom-answer {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.custom-answer input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 13px;
+}
+
+.custom-answer button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.question-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.question-nav button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.project-select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 13px;
+}
+
 .settings,
 .debug-logs {
   padding-top: 12px;

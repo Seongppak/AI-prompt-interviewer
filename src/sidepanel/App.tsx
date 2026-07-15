@@ -3,8 +3,13 @@ import { composePrompt } from './composePrompt'
 import { insertIntoChatGpt, type InsertResult } from './insertIntoChatGpt'
 import { DebugLogs } from './DebugLogs'
 import { Settings } from './Settings'
-import { getPendingQuestion } from '../shared/pendingQuestion'
-import { getDynamicQuestions, type DynamicQuestionsState } from '../shared/dynamicQuestions'
+import {
+  getActiveProjectId,
+  getProjects,
+  setActiveProjectId,
+  updateProject,
+  type Project,
+} from '../shared/project'
 import './App.css'
 
 const STATUS_MESSAGE: Record<InsertResult, string> = {
@@ -13,58 +18,96 @@ const STATUS_MESSAGE: Record<InsertResult, string> = {
   failed: '⚠️ 입력창을 찾지 못했어요. ChatGPT 페이지를 새로고침해보세요',
 }
 
+function formatProjectLabel(project: Project): string {
+  const date = new Date(project.createdAt)
+  const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`
+  const summary =
+    project.originalQuestion.length > 24
+      ? `${project.originalQuestion.slice(0, 24)}…`
+      : project.originalQuestion
+  return `${summary} · ${dateLabel}`
+}
+
 function App() {
-  const [pendingQuestion, setPendingQuestion] = useState('')
-  const [dynamicState, setDynamicState] = useState<DynamicQuestionsState | null>(null)
-  const [stepIndex, setStepIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [projects, setProjects] = useState<Project[]>([])
+  const [activeId, setActiveId] = useState('')
   const [status, setStatus] = useState<InsertResult | null>(null)
+  const [customMode, setCustomMode] = useState(false)
+  const [customText, setCustomText] = useState('')
 
   useEffect(() => {
-    getPendingQuestion().then(setPendingQuestion)
-    getDynamicQuestions().then(setDynamicState)
+    getProjects().then(setProjects)
+    getActiveProjectId().then(setActiveId)
 
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area !== 'local') return
-      if (changes['pending_question']) {
-        setPendingQuestion((changes['pending_question'].newValue ?? '') as string)
+      if (changes['projects']) {
+        setProjects((changes['projects'].newValue ?? []) as Project[])
       }
-      if (changes['dynamic_questions']) {
-        setDynamicState(
-          (changes['dynamic_questions'].newValue ?? null) as DynamicQuestionsState | null,
-        )
+      if (changes['active_project_id']) {
+        setActiveId((changes['active_project_id'].newValue ?? '') as string)
       }
     }
     chrome.storage.onChanged.addListener(listener)
     return () => chrome.storage.onChanged.removeListener(listener)
   }, [])
 
-  // 새 질문이 들어오면 이전 인터뷰 진행 상태를 초기화한다.
   useEffect(() => {
-    setStepIndex(0)
-    setAnswers({})
     setStatus(null)
-  }, [pendingQuestion])
+  }, [activeId])
 
-  const questions = dynamicState?.status === 'ready' ? dynamicState.questions : []
+  const activeProject = projects.find((project) => project.id === activeId) ?? null
+  const questions = activeProject?.questions ?? []
+  const stepIndex = activeProject?.stepIndex ?? 0
+  const answers = activeProject?.answers ?? {}
   const isInterviewDone = stepIndex >= questions.length
   const currentQuestion = questions[stepIndex]
 
+  // 질문이 바뀌면 이전 질문에서 열어둔 기타 입력 상태를 초기화한다.
+  useEffect(() => {
+    setCustomMode(false)
+    setCustomText('')
+  }, [activeId, stepIndex])
+
   function handleAnswer(value: string) {
-    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }))
-    setStepIndex((prev) => prev + 1)
+    if (!activeProject || !currentQuestion) return
+    updateProject(activeProject.id, {
+      answers: { ...answers, [currentQuestion.id]: value },
+      stepIndex: stepIndex + 1,
+    })
+  }
+
+  function handleCustomSubmit() {
+    const value = customText.trim()
+    if (!value) return
+    handleAnswer(value)
+  }
+
+  function handleSkip() {
+    if (!activeProject || !currentQuestion) return
+    const nextAnswers = { ...answers }
+    delete nextAnswers[currentQuestion.id]
+    updateProject(activeProject.id, { answers: nextAnswers, stepIndex: stepIndex + 1 })
+  }
+
+  function handleBack() {
+    if (!activeProject || stepIndex === 0) return
+    updateProject(activeProject.id, { stepIndex: stepIndex - 1 })
   }
 
   function handleRestart() {
-    setStepIndex(0)
-    setAnswers({})
+    if (!activeProject) return
+    updateProject(activeProject.id, { answers: {}, stepIndex: 0 })
     setStatus(null)
   }
 
   async function handleInsert() {
+    if (!activeProject) return
     setStatus(null)
     try {
-      const result = await insertIntoChatGpt(composePrompt(pendingQuestion, questions, answers))
+      const result = await insertIntoChatGpt(
+        composePrompt(activeProject.originalQuestion, questions, answers),
+      )
       setStatus(result)
     } catch {
       setStatus('failed')
@@ -75,25 +118,39 @@ function App() {
     <main className="interview">
       <h1>AI Prompt Interviewer</h1>
 
-      {!pendingQuestion && (
+      {projects.length > 0 && (
+        <select
+          className="project-select"
+          value={activeId}
+          onChange={(e) => setActiveProjectId(e.target.value)}
+        >
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {formatProjectLabel(project)}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {!activeProject && (
         <section className="placeholder">
           <p>ChatGPT에서 질문을 입력하면 여기서 인터뷰가 시작돼요.</p>
         </section>
       )}
 
-      {pendingQuestion && (!dynamicState || dynamicState.status === 'loading') && (
+      {activeProject && activeProject.status === 'loading' && (
         <section className="placeholder">
           <p>질문을 분석하고 있어요...</p>
         </section>
       )}
 
-      {pendingQuestion && dynamicState?.status === 'error' && (
+      {activeProject && activeProject.status === 'error' && (
         <section className="placeholder">
-          <p>⚠️ {dynamicState.error ?? '질문을 분석하지 못했어요'}</p>
+          <p>⚠️ {activeProject.error ?? '질문을 분석하지 못했어요'}</p>
         </section>
       )}
 
-      {pendingQuestion && dynamicState?.status === 'ready' && !isInterviewDone && currentQuestion && (
+      {activeProject && activeProject.status === 'interviewing' && !isInterviewDone && currentQuestion && (
         <section className="question">
           <p className="progress">
             {stepIndex + 1} / {questions.length}
@@ -105,14 +162,45 @@ function App() {
                 {option.label}
               </button>
             ))}
+            <button type="button" onClick={() => setCustomMode(true)}>
+              기타 (직접 입력)
+            </button>
+          </div>
+
+          {customMode && (
+            <div className="custom-answer">
+              <input
+                type="text"
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                placeholder="답변을 입력하세요"
+                autoFocus
+              />
+              <button type="button" onClick={handleCustomSubmit} disabled={!customText.trim()}>
+                확인
+              </button>
+            </div>
+          )}
+
+          <div className="question-nav">
+            {stepIndex > 0 && (
+              <button type="button" onClick={handleBack}>
+                ← 이전
+              </button>
+            )}
+            <button type="button" onClick={handleSkip}>
+              건너뛰기
+            </button>
           </div>
         </section>
       )}
 
-      {pendingQuestion && dynamicState?.status === 'ready' && isInterviewDone && (
+      {activeProject && activeProject.status === 'interviewing' && isInterviewDone && (
         <section className="result">
           <p className="result-label">완성된 프롬프트</p>
-          <pre className="prompt-preview">{composePrompt(pendingQuestion, questions, answers)}</pre>
+          <pre className="prompt-preview">
+            {composePrompt(activeProject.originalQuestion, questions, answers)}
+          </pre>
           <button type="button" onClick={handleInsert}>
             ChatGPT에 삽입
           </button>

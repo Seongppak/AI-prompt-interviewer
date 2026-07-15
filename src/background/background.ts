@@ -1,7 +1,6 @@
 import { log } from '../shared/logger'
-import { setPendingQuestion } from '../shared/pendingQuestion'
 import { getApiKey } from '../shared/settings'
-import { setDynamicQuestions } from '../shared/dynamicQuestions'
+import { createProject, updateProject } from '../shared/project'
 import { generateInterviewQuestions } from './generateQuestions'
 
 interface OriginalQuestionMessage {
@@ -10,14 +9,13 @@ interface OriginalQuestionMessage {
 }
 
 async function handleOriginalQuestion(question: string): Promise<void> {
-  await setDynamicQuestions({ status: 'loading', questions: [] })
+  const project = await createProject(question)
 
   const apiKey = await getApiKey()
   if (!apiKey) {
     log('background', 'warn', 'no Gemini API key set')
-    await setDynamicQuestions({
+    await updateProject(project.id, {
       status: 'error',
-      questions: [],
       error: '설정에서 Gemini API 키를 먼저 입력해주세요',
     })
     return
@@ -26,14 +24,10 @@ async function handleOriginalQuestion(question: string): Promise<void> {
   try {
     const questions = await generateInterviewQuestions(question, apiKey)
     log('background', 'info', 'generated interview questions', { count: questions.length })
-    await setDynamicQuestions({ status: 'ready', questions })
+    await updateProject(project.id, { status: 'interviewing', questions })
   } catch (err) {
     log('background', 'error', 'failed to generate interview questions', String(err))
-    await setDynamicQuestions({
-      status: 'error',
-      questions: [],
-      error: String(err),
-    })
+    await updateProject(project.id, { status: 'error', error: String(err) })
   }
 }
 
@@ -57,10 +51,6 @@ chrome.runtime.onMessage.addListener((message: OriginalQuestionMessage, sender) 
   if (message.type !== 'ORIGINAL_QUESTION') return
 
   log('background', 'info', 'received ORIGINAL_QUESTION', { question: message.question })
-
-  setPendingQuestion(message.question).catch((err) => {
-    log('background', 'error', 'failed to store pending question', String(err))
-  })
 
   if (sender.tab?.windowId !== undefined) {
     chrome.sidePanel.open({ windowId: sender.tab.windowId }).catch((err) => {
