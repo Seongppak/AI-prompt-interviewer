@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { clearLogs, getLogs, type LogEntry } from '../shared/logger'
 
 function formatEntry(entry: LogEntry): string {
@@ -14,10 +14,25 @@ export function DebugLogs() {
     setLogs(await getLogs())
   }
 
-  async function toggle() {
-    const next = !visible
-    setVisible(next)
-    if (next) await refresh()
+  // 로그가 열려 있는 동안 storage 변경을 구독해서 실시간으로 갱신한다.
+  useEffect(() => {
+    if (!visible) return
+    refresh()
+
+    const listener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      area: string,
+    ) => {
+      if (area === 'local' && changes['debug_logs']) {
+        setLogs((changes['debug_logs'].newValue ?? []) as LogEntry[])
+      }
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [visible])
+
+  function toggle() {
+    setVisible((prev) => !prev)
   }
 
   async function handleClear() {

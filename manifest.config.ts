@@ -23,5 +23,9 @@ export default defineManifest({
     },
   ],
   permissions: ['sidePanel', 'activeTab', 'scripting', 'storage'],
-  host_permissions: ['https://chatgpt.com/*', 'https://chat.openai.com/*'],
+  host_permissions: [
+    'https://chatgpt.com/*',
+    'https://chat.openai.com/*',
+    'https://generativelanguage.googleapis.com/*',
+  ],
 })
