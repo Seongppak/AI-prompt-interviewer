@@ -167,17 +167,19 @@ function App() {
           <p className="question-text">{currentQuestion.text}</p>
           <div className="options">
             {currentQuestion.options.map((option) => {
-              const isRecommended =
+              const isPreferred =
                 !!currentQuestion.category &&
                 preferredValues[currentQuestion.category] === option.value
+              const isAiRecommended = currentQuestion.recommendedValue === option.value
               return (
                 <button
                   key={option.value}
                   type="button"
-                  className={isRecommended ? 'option-recommended' : undefined}
+                  className={isPreferred ? 'option-recommended' : undefined}
                   onClick={() => handleAnswer(option.value)}
                 >
-                  {isRecommended ? '⭐ ' : ''}
+                  {isPreferred ? '⭐ ' : ''}
+                  {isAiRecommended ? '🤖 ' : ''}
                   {option.label}
                 </button>
               )
@@ -186,6 +188,10 @@ function App() {
               기타 (직접 입력)
             </button>
           </div>
+
+          {currentQuestion.recommendedReason && (
+            <p className="ai-recommend-reason">🤖 AI 추천 이유: {currentQuestion.recommendedReason}</p>
+          )}
 
           {customMode && (
             <div className="custom-answer">

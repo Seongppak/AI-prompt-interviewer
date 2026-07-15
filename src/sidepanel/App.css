@@ -57,6 +57,12 @@
   font-weight: 600;
 }
 
+.ai-recommend-reason {
+  font-size: 12px;
+  color: var(--text);
+  margin: 8px 0 0;
+}
+
 .result-label {
   font-size: 13px;
   color: var(--text);
