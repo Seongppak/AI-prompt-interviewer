@@ -51,6 +51,12 @@
   background: var(--accent-bg);
 }
 
+.option-recommended {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  font-weight: 600;
+}
+
 .result-label {
   font-size: 13px;
   color: var(--text);

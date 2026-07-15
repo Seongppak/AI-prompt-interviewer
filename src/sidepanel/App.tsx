@@ -10,6 +10,7 @@ import {
   updateProject,
   type Project,
 } from '../shared/project'
+import { getPreferredValues, recordPreference } from '../shared/preferences'
 import './App.css'
 
 const STATUS_MESSAGE: Record<InsertResult, string> = {
@@ -34,10 +35,12 @@ function App() {
   const [status, setStatus] = useState<InsertResult | null>(null)
   const [customMode, setCustomMode] = useState(false)
   const [customText, setCustomText] = useState('')
+  const [preferredValues, setPreferredValues] = useState<Record<string, string>>({})
 
   useEffect(() => {
     getProjects().then(setProjects)
     getActiveProjectId().then(setActiveId)
+    getPreferredValues().then(setPreferredValues)
 
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area !== 'local') return
@@ -46,6 +49,9 @@ function App() {
       }
       if (changes['active_project_id']) {
         setActiveId((changes['active_project_id'].newValue ?? '') as string)
+      }
+      if (changes['preferences']) {
+        getPreferredValues().then(setPreferredValues)
       }
     }
     chrome.storage.onChanged.addListener(listener)
@@ -71,6 +77,9 @@ function App() {
 
   function handleAnswer(value: string) {
     if (!activeProject || !currentQuestion) return
+    if (currentQuestion.category) {
+      recordPreference(currentQuestion.category, value)
+    }
     updateProject(activeProject.id, {
       answers: { ...answers, [currentQuestion.id]: value },
       stepIndex: stepIndex + 1,
@@ -157,11 +166,22 @@ function App() {
           </p>
           <p className="question-text">{currentQuestion.text}</p>
           <div className="options">
-            {currentQuestion.options.map((option) => (
-              <button key={option.value} type="button" onClick={() => handleAnswer(option.value)}>
-                {option.label}
-              </button>
-            ))}
+            {currentQuestion.options.map((option) => {
+              const isRecommended =
+                !!currentQuestion.category &&
+                preferredValues[currentQuestion.category] === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={isRecommended ? 'option-recommended' : undefined}
+                  onClick={() => handleAnswer(option.value)}
+                >
+                  {isRecommended ? '⭐ ' : ''}
+                  {option.label}
+                </button>
+              )
+            })}
             <button type="button" onClick={() => setCustomMode(true)}>
               기타 (직접 입력)
             </button>

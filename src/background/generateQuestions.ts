@@ -23,6 +23,7 @@ const QUESTION_SCHEMA = {
         properties: {
           id: { type: 'STRING' },
           text: { type: 'STRING' },
+          category: { type: 'STRING' },
           options: {
             type: 'ARRAY',
             items: {
@@ -52,6 +53,10 @@ function buildPrompt(question: string): string {
     '각 질문은 2~4개의 선택지를 가져야 합니다.',
     '질문이 이미 충분히 구체적이라면 questions를 빈 배열로 반환하세요.',
     '각 question의 id는 영문 소문자와 언더스코어만 사용한 짧은 식별자로 만드세요.',
+    '각 question에는 category 필드도 포함하세요. 운영체제, 답변 언어, 설명의 상세도, 말투/톤, 대상 독자처럼',
+    '다른 프로젝트의 질문에서도 반복될 수 있는 보편적인 주제라면 "os", "language", "detail_level"처럼',
+    '영문 소문자와 언더스코어로 된 안정적인 슬러그를 사용하세요(같은 주제는 항상 같은 슬러그).',
+    '이번 질문에만 해당하는 매우 구체적인 내용이라면 category를 빈 문자열로 두세요.',
   ].join('\n')
 }
 
