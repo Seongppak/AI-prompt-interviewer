@@ -131,6 +131,9 @@ export async function generateInterviewQuestions(
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: QUESTION_SCHEMA,
+        // 단순한 구조화 생성 작업이라 thinking 단계 없이도 품질 차이가 거의 없다.
+        // thinking을 끄면 응답 속도가 크게 빨라진다.
+        thinkingConfig: { thinkingBudget: 0 },
       },
     }),
   })
