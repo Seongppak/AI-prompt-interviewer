@@ -11,7 +11,16 @@ import {
   type Project,
 } from '../shared/project'
 import { getPreferredValues, recordPreference } from '../shared/preferences'
+import { getExtensionEnabled, getTheme, setExtensionEnabled, type Theme } from '../shared/settings'
 import './App.css'
+
+function applyTheme(theme: Theme) {
+  if (theme === 'system') {
+    document.documentElement.removeAttribute('data-theme')
+  } else {
+    document.documentElement.dataset.theme = theme
+  }
+}
 
 const STATUS_MESSAGE: Record<InsertResult, string> = {
   inserted: '✅ AI 입력창에 삽입했어요',
@@ -36,11 +45,14 @@ function App() {
   const [customMode, setCustomMode] = useState(false)
   const [customText, setCustomText] = useState('')
   const [preferredValues, setPreferredValues] = useState<Record<string, string>>({})
+  const [enabled, setEnabledState] = useState(true)
 
   useEffect(() => {
     getProjects().then(setProjects)
     getActiveProjectId().then(setActiveId)
     getPreferredValues().then(setPreferredValues)
+    getExtensionEnabled().then(setEnabledState)
+    getTheme().then(applyTheme)
 
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area !== 'local') return
@@ -52,6 +64,12 @@ function App() {
       }
       if (changes['preferences']) {
         getPreferredValues().then(setPreferredValues)
+      }
+      if (changes['extension_enabled']) {
+        setEnabledState(changes['extension_enabled'].newValue !== false)
+      }
+      if (changes['theme']) {
+        applyTheme((changes['theme'].newValue ?? 'system') as Theme)
       }
     }
     chrome.storage.onChanged.addListener(listener)
@@ -110,6 +128,12 @@ function App() {
     setStatus(null)
   }
 
+  async function handleClosePanel() {
+    // 가로채기까지 꺼야 창을 닫은 뒤 Enter를 눌러도 패널이 다시 튀어나오지 않는다.
+    await setExtensionEnabled(false)
+    window.close()
+  }
+
   async function handleInsert() {
     if (!activeProject) return
     setStatus(null)
@@ -125,7 +149,31 @@ function App() {
 
   return (
     <main className="interview">
-      <h1>AI Prompt Interviewer</h1>
+      <div className="header-row">
+        <h1>AI Prompt Interviewer</h1>
+        <div className="header-controls">
+          <button
+            type="button"
+            className="intercept-toggle"
+            onClick={() => setExtensionEnabled(!enabled)}
+            title={enabled ? '가로채기 끄기' : '가로채기 켜기'}
+          >
+            {enabled ? '✓' : '−'}
+          </button>
+          <button
+            type="button"
+            className="close-panel"
+            onClick={handleClosePanel}
+            title="창 닫기"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      {!enabled && (
+        <p className="disabled-notice">⏸ 확장 기능이 꺼져 있어요. 질문을 가로채지 않습니다.</p>
+      )}
 
       {projects.length > 0 && (
         <select

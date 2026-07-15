@@ -10,6 +10,46 @@
   margin: 0;
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1cm;
+}
+
+.intercept-toggle,
+.close-panel {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.intercept-toggle {
+  border: 1px solid var(--warning);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.close-panel {
+  border: 1px solid var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.disabled-notice {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0;
+}
+
 .progress {
   font-size: 13px;
   color: var(--text);
@@ -188,6 +228,28 @@
   font-size: 13px;
 }
 
+.theme-options {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-options button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.theme-options button.theme-option-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--text-h);
+  font-weight: 600;
+}
+
 .settings-actions {
   display: flex;
   gap: 8px;
@@ -201,6 +263,20 @@
   color: var(--text);
   font-size: 12px;
   cursor: pointer;
+}
+
+.settings-key-link {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.settings-key-link:hover {
+  text-decoration: underline;
 }
 
 .debug-logs-body {

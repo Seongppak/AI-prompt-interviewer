@@ -1,5 +1,6 @@
 import { log } from '../shared/logger'
 import { getSiteConfig } from '../shared/sites'
+import { getExtensionEnabled } from '../shared/settings'
 
 interface InsertPromptMessage {
   type: 'INSERT_PROMPT'
@@ -11,6 +12,17 @@ const siteConfig = getSiteConfig(location.hostname)
 // After we programmatically insert the interviewed prompt, the user's next
 // Enter/click should actually send it rather than be caught again.
 let bypassNextSend = false
+
+// 사이드패널의 전원 버튼으로 언제든 끄고 켤 수 있는 전역 스위치.
+let isExtensionEnabled = true
+getExtensionEnabled().then((enabled) => {
+  isExtensionEnabled = enabled
+})
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes['extension_enabled']) {
+    isExtensionEnabled = changes['extension_enabled'].newValue !== false
+  }
+})
 
 function findChatInput(): HTMLElement | null {
   if (!siteConfig) return null
@@ -56,6 +68,8 @@ function captureOriginalQuestion(question: string): void {
 }
 
 function handleSendTrigger(event: Event, input: HTMLElement): void {
+  if (!isExtensionEnabled) return
+
   if (bypassNextSend) {
     bypassNextSend = false
     return
