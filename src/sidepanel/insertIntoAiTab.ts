@@ -1,16 +1,17 @@
 import { log } from '../shared/logger'
+import { SUPPORTED_SITES } from '../shared/sites'
 
-const CHATGPT_URL_PATTERNS = ['https://chatgpt.com/*', 'https://chat.openai.com/*']
+const AI_URL_PATTERNS = SUPPORTED_SITES.map((site) => site.urlPattern)
 
 export type InsertResult = 'inserted' | 'no_tab' | 'failed'
 
-export async function insertIntoChatGpt(prompt: string): Promise<InsertResult> {
-  const tabs = await chrome.tabs.query({ url: CHATGPT_URL_PATTERNS })
-  log('sidepanel', 'info', 'found ChatGPT tabs', { count: tabs.length })
+export async function insertIntoAiTab(prompt: string): Promise<InsertResult> {
+  const tabs = await chrome.tabs.query({ url: AI_URL_PATTERNS })
+  log('sidepanel', 'info', 'found AI tabs', { count: tabs.length })
 
   const tab = tabs.find((t) => t.active) ?? tabs[0]
   if (!tab?.id) {
-    log('sidepanel', 'warn', 'no ChatGPT tab available')
+    log('sidepanel', 'warn', 'no AI tab available')
     return 'no_tab'
   }
 

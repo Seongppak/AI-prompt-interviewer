@@ -1,5 +1,8 @@
 import { defineManifest } from '@crxjs/vite-plugin'
 import pkg from './package.json' with { type: 'json' }
+import { SUPPORTED_SITES } from './src/shared/sites.ts'
+
+const siteUrlPatterns = SUPPORTED_SITES.map((site) => site.urlPattern)
 
 export default defineManifest({
   manifest_version: 3,
@@ -18,14 +21,10 @@ export default defineManifest({
   },
   content_scripts: [
     {
-      matches: ['https://chatgpt.com/*', 'https://chat.openai.com/*'],
+      matches: siteUrlPatterns,
       js: ['src/content/content.ts'],
     },
   ],
   permissions: ['sidePanel', 'activeTab', 'scripting', 'storage'],
-  host_permissions: [
-    'https://chatgpt.com/*',
-    'https://chat.openai.com/*',
-    'https://generativelanguage.googleapis.com/*',
-  ],
+  host_permissions: [...siteUrlPatterns, 'https://generativelanguage.googleapis.com/*'],
 })

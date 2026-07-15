@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { composePrompt } from './composePrompt'
-import { insertIntoChatGpt, type InsertResult } from './insertIntoChatGpt'
+import { insertIntoAiTab, type InsertResult } from './insertIntoAiTab'
 import { DebugLogs } from './DebugLogs'
 import { Settings } from './Settings'
 import {
@@ -14,9 +14,9 @@ import { getPreferredValues, recordPreference } from '../shared/preferences'
 import './App.css'
 
 const STATUS_MESSAGE: Record<InsertResult, string> = {
-  inserted: '✅ ChatGPT 입력창에 삽입했어요',
-  no_tab: '⚠️ 열려 있는 ChatGPT 탭을 찾지 못했어요',
-  failed: '⚠️ 입력창을 찾지 못했어요. ChatGPT 페이지를 새로고침해보세요',
+  inserted: '✅ AI 입력창에 삽입했어요',
+  no_tab: '⚠️ 열려 있는 AI 사이트 탭을 찾지 못했어요',
+  failed: '⚠️ 입력창을 찾지 못했어요. 페이지를 새로고침해보세요',
 }
 
 function formatProjectLabel(project: Project): string {
@@ -114,7 +114,7 @@ function App() {
     if (!activeProject) return
     setStatus(null)
     try {
-      const result = await insertIntoChatGpt(
+      const result = await insertIntoAiTab(
         composePrompt(activeProject.originalQuestion, questions, answers),
       )
       setStatus(result)
