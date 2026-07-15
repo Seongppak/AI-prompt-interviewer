@@ -77,3 +77,53 @@
   font-size: 13px;
   color: var(--text);
 }
+
+.debug-logs {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.debug-logs > button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debug-logs-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debug-logs-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.debug-logs-actions button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debug-logs-list {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+}

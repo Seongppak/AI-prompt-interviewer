@@ -1,3 +1,5 @@
+import { log } from '../shared/logger'
+
 interface InsertPromptMessage {
   type: 'INSERT_PROMPT'
   prompt: string
@@ -12,7 +14,10 @@ function findChatInput(): HTMLElement | null {
 
 function insertPrompt(text: string): boolean {
   const input = findChatInput()
-  if (!input) return false
+  if (!input) {
+    log('content', 'warn', 'chat input not found')
+    return false
+  }
 
   input.focus()
 
@@ -25,11 +30,15 @@ function insertPrompt(text: string): boolean {
   }
 
   document.execCommand('insertText', false, text)
+  log('content', 'info', 'prompt inserted')
   return true
 }
 
+log('content', 'info', 'content script loaded', { hostname: location.hostname })
+
 chrome.runtime.onMessage.addListener((message: InsertPromptMessage, _sender, sendResponse) => {
   if (message.type === 'INSERT_PROMPT') {
+    log('content', 'info', 'received INSERT_PROMPT message')
     sendResponse({ ok: insertPrompt(message.prompt) })
   }
   return true

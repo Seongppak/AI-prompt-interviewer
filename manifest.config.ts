@@ -13,15 +13,15 @@ export default defineManifest({
     default_path: 'src/sidepanel/index.html',
   },
   background: {
-    service_worker: 'src/background/index.ts',
+    service_worker: 'src/background/background.ts',
     type: 'module',
   },
   content_scripts: [
     {
       matches: ['https://chatgpt.com/*', 'https://chat.openai.com/*'],
-      js: ['src/content/index.ts'],
+      js: ['src/content/content.ts'],
     },
   ],
-  permissions: ['sidePanel', 'activeTab', 'scripting'],
+  permissions: ['sidePanel', 'activeTab', 'scripting', 'storage'],
   host_permissions: ['https://chatgpt.com/*', 'https://chat.openai.com/*'],
 })

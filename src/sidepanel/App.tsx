@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { mockQuestions } from './data/mockQuestions'
 import { composePrompt } from './composePrompt'
 import { insertIntoChatGpt, type InsertResult } from './insertIntoChatGpt'
+import { DebugLogs } from './DebugLogs'
 import './App.css'
 
 const STATUS_MESSAGE: Record<InsertResult, string> = {
@@ -78,6 +79,8 @@ function App() {
           {status && <p className="status-message">{STATUS_MESSAGE[status]}</p>}
         </section>
       )}
+
+      <DebugLogs />
     </main>
   )
 }
