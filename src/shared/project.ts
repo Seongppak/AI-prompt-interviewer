@@ -11,6 +11,8 @@ export interface Project {
   answers: Record<string, string>
   stepIndex: number
   error?: string
+  // 질문을 가로챈 사이트의 hostname (예: "grok.com"). 삽입 대상 탭/버튼 표시에 쓰인다.
+  sourceHostname: string
 }
 
 const PROJECTS_KEY = 'projects'
@@ -32,7 +34,7 @@ export async function setActiveProjectId(id: string): Promise<void> {
 }
 
 // 새 원본 질문이 들어올 때마다 프로젝트를 만들어 목록 맨 앞에 추가하고 활성 프로젝트로 전환한다.
-export async function createProject(originalQuestion: string): Promise<Project> {
+export async function createProject(originalQuestion: string, sourceHostname: string): Promise<Project> {
   const project: Project = {
     id: crypto.randomUUID(),
     originalQuestion,
@@ -41,6 +43,7 @@ export async function createProject(originalQuestion: string): Promise<Project> 
     questions: [],
     answers: {},
     stepIndex: 0,
+    sourceHostname,
   }
 
   const projects = await getProjects()

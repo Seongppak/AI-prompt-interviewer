@@ -6,10 +6,11 @@ import { generateInterviewQuestions } from './generateQuestions'
 interface OriginalQuestionMessage {
   type: 'ORIGINAL_QUESTION'
   question: string
+  hostname: string
 }
 
-async function handleOriginalQuestion(question: string): Promise<void> {
-  const project = await createProject(question)
+async function handleOriginalQuestion(question: string, hostname: string): Promise<void> {
+  const project = await createProject(question, hostname)
 
   const apiKey = await getApiKey()
   if (!apiKey) {
@@ -64,7 +65,7 @@ chrome.runtime.onMessage.addListener((message: OriginalQuestionMessage, sender) 
   }
 
   isGenerating = true
-  handleOriginalQuestion(message.question).finally(() => {
+  handleOriginalQuestion(message.question, message.hostname).finally(() => {
     isGenerating = false
   })
 })

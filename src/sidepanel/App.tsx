@@ -12,6 +12,7 @@ import {
 } from '../shared/project'
 import { getPreferredValues, recordPreference } from '../shared/preferences'
 import { getExtensionEnabled, getTheme, setExtensionEnabled, type Theme } from '../shared/settings'
+import { getSiteConfig } from '../shared/sites'
 import './App.css'
 
 function applyTheme(theme: Theme) {
@@ -22,10 +23,19 @@ function applyTheme(theme: Theme) {
   }
 }
 
-const STATUS_MESSAGE: Record<InsertResult, string> = {
-  inserted: '✅ AI 입력창에 삽입했어요',
-  no_tab: '⚠️ 열려 있는 AI 사이트 탭을 찾지 못했어요',
-  failed: '⚠️ 입력창을 찾지 못했어요. 페이지를 새로고침해보세요',
+function siteDisplayName(hostname: string | undefined): string {
+  return (hostname && getSiteConfig(hostname)?.displayName) || '채팅창'
+}
+
+function statusMessage(result: InsertResult, displayName: string): string {
+  switch (result) {
+    case 'inserted':
+      return `✅ ${displayName}에 삽입했어요`
+    case 'no_tab':
+      return `⚠️ 열려 있는 ${displayName} 탭을 찾지 못했어요`
+    case 'failed':
+      return '⚠️ 입력창을 찾지 못했어요. 페이지를 새로고침해보세요'
+  }
 }
 
 function formatProjectLabel(project: Project): string {
@@ -140,12 +150,15 @@ function App() {
     try {
       const result = await insertIntoAiTab(
         composePrompt(activeProject.originalQuestion, questions, answers),
+        activeProject.sourceHostname,
       )
       setStatus(result)
     } catch {
       setStatus('failed')
     }
   }
+
+  const activeSiteName = siteDisplayName(activeProject?.sourceHostname)
 
   return (
     <main className="interview">
@@ -191,7 +204,7 @@ function App() {
 
       {!activeProject && (
         <section className="placeholder">
-          <p>ChatGPT에서 질문을 입력하면 여기서 인터뷰가 시작돼요.</p>
+          <p>AI 사이트에서 질문을 입력하면 여기서 인터뷰가 시작돼요.</p>
         </section>
       )}
 
@@ -276,14 +289,14 @@ function App() {
             {composePrompt(activeProject.originalQuestion, questions, answers)}
           </pre>
           <button type="button" onClick={handleInsert}>
-            ChatGPT에 삽입
+            {activeSiteName}에 삽입
           </button>
           {questions.length > 0 && (
             <button type="button" onClick={handleRestart}>
               다시 시작
             </button>
           )}
-          {status && <p className="status-message">{STATUS_MESSAGE[status]}</p>}
+          {status && <p className="status-message">{statusMessage(status, activeSiteName)}</p>}
         </section>
       )}
 

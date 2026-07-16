@@ -33,6 +33,10 @@ function findChatInput(): HTMLElement | null {
   return null
 }
 
+function isTextInputElement(el: HTMLElement): el is HTMLTextAreaElement | HTMLInputElement {
+  return el.tagName === 'TEXTAREA' || el.tagName === 'INPUT'
+}
+
 function insertPrompt(text: string): boolean {
   const input = findChatInput()
   if (!input) {
@@ -42,12 +46,17 @@ function insertPrompt(text: string): boolean {
 
   input.focus()
 
-  const selection = window.getSelection()
-  if (selection) {
-    const range = document.createRange()
-    range.selectNodeContents(input)
-    selection.removeAllRanges()
-    selection.addRange(range)
+  // <textarea>/<input>은 자체 selection 모델을 쓰므로 window.getSelection()이 통하지 않는다.
+  if (isTextInputElement(input)) {
+    input.select()
+  } else {
+    const selection = window.getSelection()
+    if (selection) {
+      const range = document.createRange()
+      range.selectNodeContents(input)
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }
   }
 
   document.execCommand('insertText', false, text)
@@ -57,14 +66,17 @@ function insertPrompt(text: string): boolean {
 }
 
 function getInputText(input: HTMLElement): string {
+  if (isTextInputElement(input)) return input.value.trim()
   return input.innerText.trim()
 }
 
 function captureOriginalQuestion(question: string): void {
   log('content', 'info', 'intercepted original question', { question })
-  chrome.runtime.sendMessage({ type: 'ORIGINAL_QUESTION', question }).catch((err) => {
-    log('content', 'error', 'failed to send ORIGINAL_QUESTION', String(err))
-  })
+  chrome.runtime
+    .sendMessage({ type: 'ORIGINAL_QUESTION', question, hostname: location.hostname })
+    .catch((err) => {
+      log('content', 'error', 'failed to send ORIGINAL_QUESTION', String(err))
+    })
 }
 
 function handleSendTrigger(event: Event, input: HTMLElement): void {
