@@ -57,6 +57,22 @@ export const SUPPORTED_SITES: SiteConfig[] = [
     // 입력창을 담은 fieldset 안에서 툴바의 마지막 버튼(항상 마이크/전송 슬롯)을 잡는다.
     sendButtonSelector: 'fieldset:has([data-testid="chat-input"]) div.duration-snap:last-child button',
   },
+  {
+    hostname: 'www.perplexity.ai',
+    urlPattern: 'https://www.perplexity.ai/*',
+    displayName: 'Perplexity',
+    inputSelectors: ['#ask-input'],
+    // 전송 버튼도 aria-label(언어 의존)뿐 data-testid가 없어서, 입력창을 담은 grid 컨테이너의
+    // 마지막 열(툴바) 안 마지막 버튼(항상 마이크/전송 슬롯)을 구조적으로 잡는다.
+    sendButtonSelector: 'div:has(> * > * > #ask-input) > div:last-child > button:last-child',
+  },
+  {
+    hostname: 'copilot.microsoft.com',
+    urlPattern: 'https://copilot.microsoft.com/*',
+    displayName: 'Copilot',
+    inputSelectors: ['#userInput'],
+    sendButtonSelector: '[data-testid="submit-button"]',
+  },
 ]
 
 export function getSiteConfig(hostname: string): SiteConfig | undefined {
