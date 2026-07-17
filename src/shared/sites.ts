@@ -48,6 +48,15 @@ export const SUPPORTED_SITES: SiteConfig[] = [
     ],
     sendButtonSelector: '[data-testid="chat-submit"]',
   },
+  {
+    hostname: 'claude.ai',
+    urlPattern: 'https://claude.ai/*',
+    displayName: 'Claude',
+    inputSelectors: ['[data-testid="chat-input"]'],
+    // aria-label이 상태(마이크/전송)와 언어에 따라 바뀌고 data-testid도 없어서,
+    // 입력창을 담은 fieldset 안에서 툴바의 마지막 버튼(항상 마이크/전송 슬롯)을 잡는다.
+    sendButtonSelector: 'fieldset:has([data-testid="chat-input"]) div.duration-snap:last-child button',
+  },
 ]
 
 export function getSiteConfig(hostname: string): SiteConfig | undefined {
