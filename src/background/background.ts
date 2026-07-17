@@ -1,7 +1,49 @@
 import { log } from '../shared/logger'
 import { getApiKey } from '../shared/settings'
 import { createProject, updateProject } from '../shared/project'
+import { getSiteConfig } from '../shared/sites'
 import { generateInterviewQuestions } from './generateQuestions'
+
+const SIDE_PANEL_PATH = 'src/sidepanel/index.html'
+
+// AI 사이트 탭에서만 사이드패널을 켜서, 다른 탭으로 옮겨도 패널이 계속 따라오지 않게 한다.
+async function updateSidePanelForTab(tabId: number, url?: string): Promise<void> {
+  let hostname = ''
+  try {
+    hostname = url ? new URL(url).hostname : ''
+  } catch {
+    hostname = ''
+  }
+
+  try {
+    if (getSiteConfig(hostname)) {
+      await chrome.sidePanel.setOptions({ tabId, path: SIDE_PANEL_PATH, enabled: true })
+    } else {
+      await chrome.sidePanel.setOptions({ tabId, enabled: false })
+    }
+  } catch (err) {
+    log('background', 'error', 'sidePanel.setOptions failed', String(err))
+  }
+}
+
+// 확장이 새로 로드/리로드될 때 이미 열려 있던 탭들에도 반영한다.
+chrome.tabs.query({}).then((tabs) => {
+  for (const tab of tabs) {
+    if (tab.id !== undefined) updateSidePanelForTab(tab.id, tab.url)
+  }
+})
+
+chrome.tabs.onCreated.addListener((tab) => {
+  if (tab.id !== undefined) updateSidePanelForTab(tab.id, tab.url)
+})
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+    updateSidePanelForTab(tabId, changeInfo.url)
+  } else if (changeInfo.status === 'complete') {
+    updateSidePanelForTab(tabId, tab.url)
+  }
+})
 
 interface OriginalQuestionMessage {
   type: 'ORIGINAL_QUESTION'
