@@ -38,8 +38,23 @@ export async function insertIntoAiTab(prompt: string, sourceHostname: string): P
 }
 
 const OPEN_TAB_TIMEOUT_MS = 15_000
+const INSERT_RETRY_DELAY_MS = 500
+const INSERT_MAX_ATTEMPTS = 10
 
-// 새 탭을 열고, 로딩이 끝나 content script가 준비되면 프롬프트를 자동 삽입한다.
+// 탭 상태가 'complete'여도 React 등으로 그려지는 채팅 입력창은 아직 DOM에 없을 수 있다.
+// 입력창이 나타날 때까지(또는 최대 시도 횟수까지) 짧은 간격으로 재시도한다.
+async function sendInsertPromptWithRetry(tabId: number, prompt: string): Promise<InsertResult> {
+  for (let attempt = 1; attempt <= INSERT_MAX_ATTEMPTS; attempt++) {
+    const result = await sendInsertPrompt(tabId, prompt)
+    if (result === 'inserted') return result
+    if (attempt < INSERT_MAX_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, INSERT_RETRY_DELAY_MS))
+    }
+  }
+  return 'failed'
+}
+
+// 새 탭을 열고, 로딩이 끝나 content script/입력창이 준비되면 프롬프트를 자동 삽입한다.
 export async function openAndInsertPrompt(url: string, prompt: string): Promise<InsertResult> {
   const tab = await chrome.tabs.create({ url })
   if (!tab.id) return 'failed'
@@ -55,7 +70,7 @@ export async function openAndInsertPrompt(url: string, prompt: string): Promise<
       if (updatedTabId !== tabId || info.status !== 'complete') return
       chrome.tabs.onUpdated.removeListener(listener)
       clearTimeout(timeout)
-      sendInsertPrompt(tabId, prompt).then(resolve)
+      sendInsertPromptWithRetry(tabId, prompt).then(resolve)
     }
     chrome.tabs.onUpdated.addListener(listener)
   })
