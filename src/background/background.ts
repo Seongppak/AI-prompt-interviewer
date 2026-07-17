@@ -23,9 +23,17 @@ async function handleOriginalQuestion(question: string, hostname: string): Promi
   }
 
   try {
-    const questions = await generateInterviewQuestions(question, apiKey)
-    log('background', 'info', 'generated interview questions', { count: questions.length })
-    await updateProject(project.id, { status: 'interviewing', questions })
+    const result = await generateInterviewQuestions(question, apiKey)
+    log('background', 'info', 'generated interview questions', {
+      count: result.questions.length,
+      recommendedSite: result.recommendedSite,
+    })
+    await updateProject(project.id, {
+      status: 'interviewing',
+      questions: result.questions,
+      recommendedSite: result.recommendedSite,
+      recommendedSiteReason: result.recommendedSiteReason,
+    })
   } catch (err) {
     log('background', 'error', 'failed to generate interview questions', String(err))
     await updateProject(project.id, { status: 'error', error: String(err) })

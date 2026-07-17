@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { composePrompt } from './composePrompt'
-import { insertIntoAiTab, type InsertResult } from './insertIntoAiTab'
+import { insertIntoAiTab, openAndInsertPrompt, type InsertResult } from './insertIntoAiTab'
 import { DebugLogs } from './DebugLogs'
 import { Settings } from './Settings'
 import {
@@ -12,7 +12,7 @@ import {
 } from '../shared/project'
 import { getPreferredValues, recordPreference } from '../shared/preferences'
 import { getExtensionEnabled, getTheme, setExtensionEnabled, type Theme } from '../shared/settings'
-import { getSiteConfig } from '../shared/sites'
+import { findSiteByDisplayName, getBaseUrl, getSiteConfig } from '../shared/sites'
 import './App.css'
 
 function applyTheme(theme: Theme) {
@@ -51,7 +51,7 @@ function formatProjectLabel(project: Project): string {
 function App() {
   const [projects, setProjects] = useState<Project[]>([])
   const [activeId, setActiveId] = useState('')
-  const [status, setStatus] = useState<InsertResult | null>(null)
+  const [status, setStatus] = useState<{ result: InsertResult; siteName: string } | null>(null)
   const [customMode, setCustomMode] = useState(false)
   const [customText, setCustomText] = useState('')
   const [preferredValues, setPreferredValues] = useState<Record<string, string>>({})
@@ -152,13 +152,39 @@ function App() {
         composePrompt(activeProject.originalQuestion, questions, answers),
         activeProject.sourceHostname,
       )
-      setStatus(result)
+      setStatus({ result, siteName: activeSiteName })
     } catch {
-      setStatus('failed')
+      setStatus({ result: 'failed', siteName: activeSiteName })
     }
   }
 
   const activeSiteName = siteDisplayName(activeProject?.sourceHostname)
+
+  const recommendedSite = activeProject?.recommendedSite?.trim()
+  const showSiteRecommendation =
+    !!recommendedSite && recommendedSite.toLowerCase() !== activeSiteName.toLowerCase()
+  const recommendedSiteConfig = recommendedSite ? findSiteByDisplayName(recommendedSite) : undefined
+
+  async function handleOpenRecommendedSite() {
+    if (!recommendedSiteConfig || !activeProject) return
+    const url = getBaseUrl(recommendedSiteConfig)
+
+    // 인터뷰가 끝나 완성된 프롬프트가 있으면, 새 탭을 열면서 바로 그 프롬프트를 삽입한다.
+    if (isInterviewDone) {
+      setStatus(null)
+      try {
+        const result = await openAndInsertPrompt(
+          url,
+          composePrompt(activeProject.originalQuestion, questions, answers),
+        )
+        setStatus({ result, siteName: recommendedSite! })
+      } catch {
+        setStatus({ result: 'failed', siteName: recommendedSite! })
+      }
+    } else {
+      chrome.tabs.create({ url })
+    }
+  }
 
   return (
     <main className="interview">
@@ -200,6 +226,20 @@ function App() {
             </option>
           ))}
         </select>
+      )}
+
+      {showSiteRecommendation && (
+        <section className="site-recommendation">
+          <p>
+            💡 이 작업은 <strong>{recommendedSite}</strong>가 더 적합할 수 있어요
+            {activeProject?.recommendedSiteReason ? `: ${activeProject.recommendedSiteReason}` : ''}
+          </p>
+          {recommendedSiteConfig && (
+            <button type="button" onClick={handleOpenRecommendedSite}>
+              {isInterviewDone ? `${recommendedSite}에 삽입` : `${recommendedSite}에서 새로 시작`}
+            </button>
+          )}
+        </section>
       )}
 
       {!activeProject && (
@@ -296,8 +336,11 @@ function App() {
               다시 시작
             </button>
           )}
-          {status && <p className="status-message">{statusMessage(status, activeSiteName)}</p>}
         </section>
+      )}
+
+      {status && (
+        <p className="status-message">{statusMessage(status.result, status.siteName)}</p>
       )}
 
       <Settings />

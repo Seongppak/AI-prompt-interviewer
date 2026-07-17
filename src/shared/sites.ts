@@ -62,3 +62,13 @@ export const SUPPORTED_SITES: SiteConfig[] = [
 export function getSiteConfig(hostname: string): SiteConfig | undefined {
   return SUPPORTED_SITES.find((site) => site.hostname === hostname)
 }
+
+// displayName은 대소문자/여백 차이가 있을 수 있어 느슨하게 비교한다.
+export function findSiteByDisplayName(name: string): SiteConfig | undefined {
+  const normalized = name.trim().toLowerCase()
+  return SUPPORTED_SITES.find((site) => site.displayName.toLowerCase() === normalized)
+}
+
+export function getBaseUrl(site: SiteConfig): string {
+  return site.urlPattern.replace(/\/\*$/, '')
+}

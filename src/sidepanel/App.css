@@ -22,6 +22,34 @@
   gap: 1cm;
 }
 
+.site-recommendation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+}
+
+.site-recommendation p {
+  font-size: 13px;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.site-recommendation button {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .intercept-toggle,
 .close-panel {
   padding: 4px 10px;

@@ -13,6 +13,9 @@ export interface Project {
   error?: string
   // 질문을 가로챈 사이트의 hostname (예: "grok.com"). 삽입 대상 탭/버튼 표시에 쓰인다.
   sourceHostname: string
+  // AI가 이 작업에 더 적합하다고 판단한 AI 서비스 이름과 이유. 우리가 지원 안 하는 곳일 수도 있다.
+  recommendedSite?: string
+  recommendedSiteReason?: string
 }
 
 const PROJECTS_KEY = 'projects'

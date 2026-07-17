@@ -41,6 +41,8 @@ const QUESTION_SCHEMA = {
         required: ['id', 'text', 'options'],
       },
     },
+    recommendedSite: { type: 'STRING' },
+    recommendedSiteReason: { type: 'STRING' },
   },
   required: ['questions'],
 }
@@ -63,6 +65,13 @@ function buildPrompt(question: string): string {
     '사용자의 원래 질문 맥락상 선택지 중 일반적으로 가장 무난하거나 좋은 기본값이 있다면,',
     '그 옵션의 value를 recommendedValue에 넣고 왜 추천하는지 한 문장으로 recommendedReason에 설명하세요.',
     '특별히 추천할 이유가 없다면 둘 다 빈 문자열로 두세요.',
+    '',
+    'recommendedSite와 recommendedSiteReason 필드도 포함하세요.',
+    '이 작업의 성격상 ChatGPT, Claude, Gemini, Grok, Perplexity, Copilot 등 실제 존재하는 AI 서비스 중',
+    '더 적합한 곳이 있다면 그 이름을 recommendedSite에 넣고, 왜 적합한지 한 문장으로 recommendedSiteReason에',
+    '설명하세요. 예를 들어 사업계획서 작성처럼 긴 글의 논리적 구조가 중요하면 Claude, 최신 뉴스나 실시간 정보가',
+    '필요하면 Gemini나 Perplexity를 추천할 수 있습니다. 특별히 다른 AI가 더 낫다고 볼 이유가 없다면 둘 다',
+    '빈 문자열로 두세요.',
   ].join('\n')
 }
 
@@ -115,10 +124,16 @@ async function fetchWithFallback(request: RequestInit): Promise<Response> {
   throw lastError
 }
 
+export interface InterviewResult {
+  questions: Question[]
+  recommendedSite: string
+  recommendedSiteReason: string
+}
+
 export async function generateInterviewQuestions(
   question: string,
   apiKey: string,
-): Promise<Question[]> {
+): Promise<InterviewResult> {
   log('background', 'info', 'requesting Gemini', { model: GEMINI_MODELS[0] })
   const res = await fetchWithFallback({
     method: 'POST',
@@ -149,6 +164,10 @@ export async function generateInterviewQuestions(
     throw new Error('Gemini 응답에서 결과 텍스트를 찾지 못했습니다')
   }
 
-  const parsed = JSON.parse(text) as { questions: Question[] }
-  return parsed.questions ?? []
+  const parsed = JSON.parse(text) as Partial<InterviewResult>
+  return {
+    questions: parsed.questions ?? [],
+    recommendedSite: parsed.recommendedSite ?? '',
+    recommendedSiteReason: parsed.recommendedSiteReason ?? '',
+  }
 }
