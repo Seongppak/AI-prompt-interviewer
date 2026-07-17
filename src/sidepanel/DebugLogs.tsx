@@ -35,6 +35,11 @@ export function DebugLogs() {
     setVisible((prev) => !prev)
   }
 
+  async function handleReloadTab() {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tab.id !== undefined) chrome.tabs.reload(tab.id)
+  }
+
   async function handleClear() {
     await clearLogs()
     await refresh()
@@ -53,9 +58,14 @@ export function DebugLogs() {
 
   return (
     <section className="debug-logs">
-      <button type="button" onClick={toggle}>
-        {visible ? '디버그 로그 숨기기' : '디버그 로그 보기'}
-      </button>
+      <div className="debug-logs-header">
+        <button type="button" onClick={toggle}>
+          {visible ? '디버그 로그 숨기기' : '디버그 로그 보기'}
+        </button>
+        <button type="button" onClick={handleReloadTab} title="현재 탭 새로고침">
+          🔄 탭 새로고침
+        </button>
+      </div>
 
       {visible && (
         <div className="debug-logs-body">

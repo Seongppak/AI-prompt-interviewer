@@ -224,8 +224,13 @@
   margin-top: auto;
 }
 
+.debug-logs-header {
+  display: flex;
+  gap: 8px;
+}
+
 .settings > button,
-.debug-logs > button {
+.debug-logs-header button {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
