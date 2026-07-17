@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { composePrompt } from './composePrompt'
 import { insertIntoAiTab, openAndInsertPrompt, type InsertResult } from './insertIntoAiTab'
+import { getBestEffortPrompt } from './optimizePrompt'
 import { DebugLogs } from './DebugLogs'
 import { Settings } from './Settings'
 import {
@@ -56,6 +57,7 @@ function App() {
   const [customText, setCustomText] = useState('')
   const [preferredValues, setPreferredValues] = useState<Record<string, string>>({})
   const [enabled, setEnabledState] = useState(true)
+  const [isInserting, setIsInserting] = useState(false)
 
   useEffect(() => {
     getProjects().then(setProjects)
@@ -147,14 +149,16 @@ function App() {
   async function handleInsert() {
     if (!activeProject) return
     setStatus(null)
+    setIsInserting(true)
     try {
-      const result = await insertIntoAiTab(
-        composePrompt(activeProject.originalQuestion, questions, answers),
-        activeProject.sourceHostname,
-      )
+      const basePrompt = composePrompt(activeProject.originalQuestion, questions, answers)
+      const prompt = await getBestEffortPrompt(basePrompt, activeSiteName)
+      const result = await insertIntoAiTab(prompt, activeProject.sourceHostname)
       setStatus({ result, siteName: activeSiteName })
     } catch {
       setStatus({ result: 'failed', siteName: activeSiteName })
+    } finally {
+      setIsInserting(false)
     }
   }
 
@@ -172,14 +176,16 @@ function App() {
     // 인터뷰가 끝나 완성된 프롬프트가 있으면, 새 탭을 열면서 바로 그 프롬프트를 삽입한다.
     if (isInterviewDone) {
       setStatus(null)
+      setIsInserting(true)
       try {
-        const result = await openAndInsertPrompt(
-          url,
-          composePrompt(activeProject.originalQuestion, questions, answers),
-        )
+        const basePrompt = composePrompt(activeProject.originalQuestion, questions, answers)
+        const prompt = await getBestEffortPrompt(basePrompt, recommendedSite!)
+        const result = await openAndInsertPrompt(url, prompt)
         setStatus({ result, siteName: recommendedSite! })
       } catch {
         setStatus({ result: 'failed', siteName: recommendedSite! })
+      } finally {
+        setIsInserting(false)
       }
     } else {
       chrome.tabs.create({ url })
@@ -235,8 +241,12 @@ function App() {
             {activeProject?.recommendedSiteReason ? `: ${activeProject.recommendedSiteReason}` : ''}
           </p>
           {recommendedSiteConfig && (
-            <button type="button" onClick={handleOpenRecommendedSite}>
-              {isInterviewDone ? `${recommendedSite}에 삽입` : `${recommendedSite}에서 새로 시작`}
+            <button type="button" onClick={handleOpenRecommendedSite} disabled={isInserting}>
+              {isInserting
+                ? '최적화 중...'
+                : isInterviewDone
+                  ? `${recommendedSite}에 삽입`
+                  : `${recommendedSite}에서 새로 시작`}
             </button>
           )}
         </section>
@@ -328,11 +338,11 @@ function App() {
           <pre className="prompt-preview">
             {composePrompt(activeProject.originalQuestion, questions, answers)}
           </pre>
-          <button type="button" onClick={handleInsert}>
-            {activeSiteName}에 삽입
+          <button type="button" onClick={handleInsert} disabled={isInserting}>
+            {isInserting ? '최적화 중...' : `${activeSiteName}에 삽입`}
           </button>
           {questions.length > 0 && (
-            <button type="button" onClick={handleRestart}>
+            <button type="button" onClick={handleRestart} disabled={isInserting}>
               다시 시작
             </button>
           )}
