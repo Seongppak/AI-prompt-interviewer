@@ -1,6 +1,7 @@
 import { log } from '../shared/logger'
 import { getApiKey } from '../shared/settings'
 import { invalidateModelCache, resolveModels } from '../shared/geminiModels'
+import { getTargetGuidance } from '../shared/promptTargets'
 
 // 실제로 시도할 모델 수. 최적화는 실패해도 원본으로 대체되므로 짧게 끊는다.
 const MAX_MODELS_TO_TRY = 2
@@ -11,13 +12,21 @@ function endpointFor(model: string): string {
 }
 
 function buildPrompt(prompt: string, siteName: string): string {
+  // 예전에는 대상 이름만 넘겨서 "ChatGPT에 맞게 바꿔라"라고만 했다. 그러면 대상의 특성을
+  // 모델의 막연한 짐작에 전적으로 의존하게 된다. prompts/targets.md의 실제 지침을 함께 넘긴다.
+  const guidance = getTargetGuidance(siteName)
+
   return [
     '다음은 AI에게 보낼 프롬프트입니다.',
     `"""${prompt}"""`,
     '',
     `이 프롬프트를 ${siteName}에 최적화된 형태로 다시 작성하세요.`,
-    `${siteName}가 요구사항을 잘 이해하고 좋은 결과를 내도록, 그 AI의 특성에 맞는 구조(필요하다면 태그, 목록, 단계별`,
-    '지시 등)와 어투로 바꾸세요. 원본의 의미와 요구사항은 절대 바꾸지 말고 표현 방식만 최적화하세요.',
+    '아래 지침을 따르세요:',
+    '',
+    guidance,
+    '',
+    '원본의 의미와 요구사항은 절대 바꾸지 말고 표현 방식만 최적화하세요.',
+    '원본에 없는 요구사항을 새로 추가하지 마세요.',
     '최적화된 프롬프트 텍스트만 반환하세요. 설명, 따옴표, 그 밖의 다른 말은 포함하지 마세요.',
   ].join('\n')
 }
