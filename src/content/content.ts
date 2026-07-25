@@ -2,6 +2,7 @@ import { log } from '../shared/logger'
 import { getSiteConfig } from '../shared/sites'
 import { getExtensionEnabled } from '../shared/settings'
 import { decodePromptHash } from '../shared/promptLink'
+import { subscribeStored } from '../shared/storage'
 
 interface InsertPromptMessage {
   type: 'INSERT_PROMPT'
@@ -19,10 +20,8 @@ let isExtensionEnabled = true
 getExtensionEnabled().then((enabled) => {
   isExtensionEnabled = enabled
 })
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes['extension_enabled']) {
-    isExtensionEnabled = changes['extension_enabled'].newValue !== false
-  }
+subscribeStored('extension_enabled', (value) => {
+  isExtensionEnabled = value !== false
 })
 
 function findChatInput(): HTMLElement | null {

@@ -1,11 +1,13 @@
+import { getStored, setStored } from './storage'
+
+// 기기 간 공유 대상이다 — 저장 위치는 storage.ts가 정한다.
 const STORAGE_KEY = 'preferences'
 
 // category -> (value -> 선택된 횟수)
 type PreferenceCounts = Record<string, Record<string, number>>
 
 async function getAllCounts(): Promise<PreferenceCounts> {
-  const { [STORAGE_KEY]: existing = {} } = await chrome.storage.local.get(STORAGE_KEY)
-  return existing as PreferenceCounts
+  return getStored<PreferenceCounts>(STORAGE_KEY, {})
 }
 
 export async function recordPreference(category: string, value: string): Promise<void> {
@@ -14,7 +16,7 @@ export async function recordPreference(category: string, value: string): Promise
   const counts = await getAllCounts()
   const categoryCounts = { ...counts[category] }
   categoryCounts[value] = (categoryCounts[value] ?? 0) + 1
-  await chrome.storage.local.set({ [STORAGE_KEY]: { ...counts, [category]: categoryCounts } })
+  await setStored(STORAGE_KEY, { ...counts, [category]: categoryCounts })
 }
 
 // category -> 가장 많이 선택된 value

@@ -14,6 +14,7 @@ import {
 } from '../shared/project'
 import { getPreferredValues, recordPreference } from '../shared/preferences'
 import { getExtensionEnabled, getTheme, setExtensionEnabled, type Theme } from '../shared/settings'
+import { subscribeStored } from '../shared/storage'
 import { findSiteByDisplayName, getBaseUrl, getSiteConfig } from '../shared/sites'
 import './App.css'
 
@@ -68,26 +69,16 @@ function App() {
     getExtensionEnabled().then(setEnabledState)
     getTheme().then(applyTheme)
 
-    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
-      if (area !== 'local') return
-      if (changes['projects']) {
-        setProjects((changes['projects'].newValue ?? []) as Project[])
-      }
-      if (changes['active_project_id']) {
-        setActiveId((changes['active_project_id'].newValue ?? '') as string)
-      }
-      if (changes['preferences']) {
-        getPreferredValues().then(setPreferredValues)
-      }
-      if (changes['extension_enabled']) {
-        setEnabledState(changes['extension_enabled'].newValue !== false)
-      }
-      if (changes['theme']) {
-        applyTheme((changes['theme'].newValue ?? 'system') as Theme)
-      }
-    }
-    chrome.storage.onChanged.addListener(listener)
-    return () => chrome.storage.onChanged.removeListener(listener)
+    // 키마다 사는 area가 다르므로(local/sync) 각자 subscribeStored로 구독한다.
+    // 예전처럼 area를 'local'로 하드코딩하면 sync로 옮긴 키의 갱신을 조용히 놓친다.
+    const unsubscribes = [
+      subscribeStored('projects', (value) => setProjects((value ?? []) as Project[])),
+      subscribeStored('active_project_id', (value) => setActiveId((value ?? '') as string)),
+      subscribeStored('preferences', () => getPreferredValues().then(setPreferredValues)),
+      subscribeStored('extension_enabled', (value) => setEnabledState(value !== false)),
+      subscribeStored('theme', (value) => applyTheme((value ?? 'system') as Theme)),
+    ]
+    return () => unsubscribes.forEach((unsubscribe) => unsubscribe())
   }, [])
 
   useEffect(() => {
