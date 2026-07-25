@@ -1,8 +1,9 @@
 import type { Question } from '../shared/question'
 import { log } from '../shared/logger'
+import { invalidateModelCache, resolveModels } from '../shared/geminiModels'
 
-// 앞 모델이 과부하(503 등)로 계속 실패하면 뒤의 경량 모델로 폴백한다.
-const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest']
+// 실제로 시도할 모델 수. 목록 상위 몇 개만 써서 실패 시 대기 시간이 길어지지 않게 한다.
+const MAX_MODELS_TO_TRY = 3
 
 function endpointFor(model: string): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
@@ -10,6 +11,8 @@ function endpointFor(model: string): string {
 
 // 일시적 오류(과부하·한도 초과)만 재시도 대상. 404/401 등은 재시도해도 소용없다.
 const RETRYABLE_STATUSES = [429, 500, 503]
+// API 키 자체가 문제인 경우(모델을 바꿔도 소용없음)만 즉시 포기한다.
+const FATAL_STATUSES = [401, 403]
 const MAX_ATTEMPTS_PER_MODEL = 2
 const REQUEST_TIMEOUT_MS = 20_000
 
@@ -101,41 +104,14 @@ async function fetchWithRetry(model: string, request: RequestInit): Promise<Resp
   }
 }
 
-async function fetchWithFallback(request: RequestInit): Promise<Response> {
-  let lastResponse: Response | null = null
-  let lastError: unknown = null
-
-  for (const [index, model] of GEMINI_MODELS.entries()) {
-    try {
-      const res = await fetchWithRetry(model, request)
-      if (res.ok || !RETRYABLE_STATUSES.includes(res.status)) return res
-      lastResponse = res
-    } catch (err) {
-      lastError = err
-    }
-
-    const nextModel = GEMINI_MODELS[index + 1]
-    if (nextModel) {
-      log('background', 'warn', `${model} 실패 지속, ${nextModel}로 폴백`)
-    }
-  }
-
-  if (lastResponse) return lastResponse
-  throw lastError
-}
-
 export interface InterviewResult {
   questions: Question[]
   recommendedSite: string
   recommendedSiteReason: string
 }
 
-export async function generateInterviewQuestions(
-  question: string,
-  apiKey: string,
-): Promise<InterviewResult> {
-  log('background', 'info', 'requesting Gemini', { model: GEMINI_MODELS[0] })
-  const res = await fetchWithFallback({
+function buildRequest(question: string, apiKey: string, useThinkingBudget: boolean): RequestInit {
+  return {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -148,10 +124,59 @@ export async function generateInterviewQuestions(
         responseSchema: QUESTION_SCHEMA,
         // 단순한 구조화 생성 작업이라 thinking 단계 없이도 품질 차이가 거의 없다.
         // thinking을 끄면 응답 속도가 크게 빨라진다.
-        thinkingConfig: { thinkingBudget: 0 },
+        ...(useThinkingBudget ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     }),
-  })
+  }
+}
+
+// 모델마다 thinkingConfig 유무 두 가지를 시도한다. 모델·옵션 조합 중 하나라도
+// 성공하면 그 응답을 쓰고, 전부 실패하면 각 조합의 실패 사유를 모아서 던진다.
+async function fetchWithFallback(question: string, apiKey: string): Promise<Response> {
+  const models = (await resolveModels(apiKey)).slice(0, MAX_MODELS_TO_TRY)
+  log('background', 'info', 'requesting Gemini', { models })
+
+  const failures: string[] = []
+  let sawMissingModel = false
+
+  for (const model of models) {
+    for (const useThinkingBudget of [true, false]) {
+      let res: Response
+      try {
+        res = await fetchWithRetry(model, buildRequest(question, apiKey, useThinkingBudget))
+      } catch (err) {
+        failures.push(`${model}: ${String(err)}`)
+        break // 네트워크·타임아웃이면 같은 모델의 다른 옵션도 볼 것 없다.
+      }
+
+      // API 키 자체가 잘못됐다면 어떤 모델·옵션으로도 통과할 수 없다.
+      if (res.ok || FATAL_STATUSES.includes(res.status)) return res
+
+      if (res.status === 404) sawMissingModel = true
+
+      const body = await res.clone().text().catch(() => '')
+      failures.push(`${model}(thinking=${useThinkingBudget}): ${res.status} ${body.slice(0, 120)}`)
+      log('background', 'warn', `${model} 실패`, {
+        status: res.status,
+        useThinkingBudget,
+      })
+
+      // 400이 아니면 옵션 문제가 아니므로 같은 모델을 다시 시도할 이유가 없다.
+      if (res.status !== 400) break
+    }
+  }
+
+  // 캐시된 모델이 단종된 경우 — 다음 시도에서 목록을 새로 받도록 캐시를 비운다.
+  if (sawMissingModel) await invalidateModelCache()
+
+  throw new Error(`Gemini 요청이 모두 실패했습니다:\n${failures.join('\n')}`)
+}
+
+export async function generateInterviewQuestions(
+  question: string,
+  apiKey: string,
+): Promise<InterviewResult> {
+  const res = await fetchWithFallback(question, apiKey)
 
   if (!res.ok) {
     const body = await res.text().catch(() => '')
