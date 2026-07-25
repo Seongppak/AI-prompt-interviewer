@@ -1,6 +1,7 @@
 import { log } from '../shared/logger'
 import { getSiteConfig } from '../shared/sites'
 import { getExtensionEnabled } from '../shared/settings'
+import { decodePromptHash } from '../shared/promptLink'
 
 interface InsertPromptMessage {
   type: 'INSERT_PROMPT'
@@ -70,6 +71,36 @@ function getInputText(input: HTMLElement): string {
   return input.innerText.trim()
 }
 
+const HASH_INSERT_RETRY_DELAY_MS = 500
+const HASH_INSERT_MAX_ATTEMPTS = 20
+
+// 외부에서 #aipi=로 넘긴 프롬프트를 입력창에 넣는다.
+//
+// isExtensionEnabled를 보지 않는 건 의도적이다 — 그 스위치는 "내가 누른 Enter를 낚아채지 마라"는
+// 뜻이고, 해시 삽입은 사용자가 명시적으로 요청한 동작이라 가로채기가 아니다.
+async function consumeHashPrompt(): Promise<void> {
+  const prompt = decodePromptHash(location.hash)
+  if (prompt === null) return
+
+  // 새로고침이나 뒤로가기로 같은 프롬프트가 다시 삽입되지 않도록 해시를 먼저 지운다.
+  history.replaceState(null, '', location.pathname + location.search)
+
+  // 입력창은 React 등으로 나중에 그려지므로 나타날 때까지 기다린다.
+  for (let attempt = 1; attempt <= HASH_INSERT_MAX_ATTEMPTS; attempt++) {
+    if (findChatInput()) {
+      if (insertPrompt(prompt)) {
+        log('content', 'info', 'inserted prompt from hash', { attempt })
+      }
+      return
+    }
+    await new Promise((resolve) => setTimeout(resolve, HASH_INSERT_RETRY_DELAY_MS))
+  }
+
+  log('content', 'error', 'chat input never appeared for hash prompt', {
+    waitedMs: HASH_INSERT_MAX_ATTEMPTS * HASH_INSERT_RETRY_DELAY_MS,
+  })
+}
+
 function captureOriginalQuestion(question: string): void {
   log('content', 'info', 'intercepted original question', { question })
   chrome.runtime
@@ -119,6 +150,13 @@ if (siteConfig) {
     },
     true,
   )
+
+  void consumeHashPrompt()
+
+  // 이미 열려 있는 탭의 해시만 바뀌면 페이지가 다시 로드되지 않으므로 별도로 받아준다.
+  window.addEventListener('hashchange', () => {
+    void consumeHashPrompt()
+  })
 
   log('content', 'info', 'content script loaded', { hostname: location.hostname })
 } else {
