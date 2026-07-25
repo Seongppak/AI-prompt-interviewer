@@ -158,6 +158,26 @@
   color: var(--text);
 }
 
+.handoff {
+  margin-top: 12px;
+}
+
+.handoff button {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.handoff button:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
 .placeholder {
   font-size: 14px;
   color: var(--text);

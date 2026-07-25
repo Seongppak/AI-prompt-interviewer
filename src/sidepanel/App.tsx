@@ -58,6 +58,7 @@ function App() {
   const [preferredValues, setPreferredValues] = useState<Record<string, string>>({})
   const [enabled, setEnabledState] = useState(true)
   const [isInserting, setIsInserting] = useState(false)
+  const [copiedForClaudeCode, setCopiedForClaudeCode] = useState(false)
 
   useEffect(() => {
     getProjects().then(setProjects)
@@ -100,9 +101,11 @@ function App() {
   const currentQuestion = questions[stepIndex]
 
   // 질문이 바뀌면 이전 질문에서 열어둔 기타 입력 상태를 초기화한다.
+  // 답변이 추가되면 프롬프트 내용도 달라지므로 "복사됨" 표시도 함께 되돌린다.
   useEffect(() => {
     setCustomMode(false)
     setCustomText('')
+    setCopiedForClaudeCode(false)
   }, [activeId, stepIndex])
 
   function handleAnswer(value: string) {
@@ -159,6 +162,20 @@ function App() {
       setStatus({ result: 'failed', siteName: activeSiteName })
     } finally {
       setIsInserting(false)
+    }
+  }
+
+  // Claude Code로 넘길 때는 Gemini 최적화를 거치지 않는다 — 저쪽에서 더 좋은 모델이
+  // 코드베이스까지 읽고 다시 다듬으므로, 여기서 미리 손대면 재작업만 늘어난다.
+  // 인터뷰 중에 눌러도 composePrompt가 답변된 질문만 골라내서 그 시점까지의 프롬프트가 나온다.
+  async function handleCopyForClaudeCode() {
+    if (!activeProject) return
+    const prompt = composePrompt(activeProject.originalQuestion, questions, answers)
+    try {
+      await navigator.clipboard.writeText(prompt)
+      setCopiedForClaudeCode(true)
+    } catch {
+      setCopiedForClaudeCode(false)
     }
   }
 
@@ -351,6 +368,14 @@ function App() {
 
       {status && (
         <p className="status-message">{statusMessage(status.result, status.siteName)}</p>
+      )}
+
+      {activeProject && activeProject.status === 'interviewing' && (
+        <section className="handoff">
+          <button type="button" onClick={handleCopyForClaudeCode}>
+            {copiedForClaudeCode ? '✅ 복사됨 — Claude Code에서 /inbox' : '📋 Claude Code로 보내기'}
+          </button>
+        </section>
       )}
 
       <Settings />
