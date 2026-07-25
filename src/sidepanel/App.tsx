@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { composePrompt } from './composePrompt'
 import { insertIntoAiTab, openAndInsertPrompt, type InsertResult } from './insertIntoAiTab'
 import { getBestEffortPrompt } from './optimizePrompt'
+import { sendToClaudeCode, type HandoffResult } from './sendToClaudeCode'
 import { DebugLogs } from './DebugLogs'
 import { Settings } from './Settings'
 import {
@@ -58,7 +59,7 @@ function App() {
   const [preferredValues, setPreferredValues] = useState<Record<string, string>>({})
   const [enabled, setEnabledState] = useState(true)
   const [isInserting, setIsInserting] = useState(false)
-  const [copiedForClaudeCode, setCopiedForClaudeCode] = useState(false)
+  const [handoff, setHandoff] = useState<HandoffResult | null>(null)
 
   useEffect(() => {
     getProjects().then(setProjects)
@@ -105,7 +106,7 @@ function App() {
   useEffect(() => {
     setCustomMode(false)
     setCustomText('')
-    setCopiedForClaudeCode(false)
+    setHandoff(null)
   }, [activeId, stepIndex])
 
   function handleAnswer(value: string) {
@@ -168,15 +169,10 @@ function App() {
   // Claude Code로 넘길 때는 Gemini 최적화를 거치지 않는다 — 저쪽에서 더 좋은 모델이
   // 코드베이스까지 읽고 다시 다듬으므로, 여기서 미리 손대면 재작업만 늘어난다.
   // 인터뷰 중에 눌러도 composePrompt가 답변된 질문만 골라내서 그 시점까지의 프롬프트가 나온다.
-  async function handleCopyForClaudeCode() {
+  async function handleSendToClaudeCode() {
     if (!activeProject) return
     const prompt = composePrompt(activeProject.originalQuestion, questions, answers)
-    try {
-      await navigator.clipboard.writeText(prompt)
-      setCopiedForClaudeCode(true)
-    } catch {
-      setCopiedForClaudeCode(false)
-    }
+    setHandoff(await sendToClaudeCode(prompt, activeProject.sourceHostname))
   }
 
   const activeSiteName = siteDisplayName(activeProject?.sourceHostname)
@@ -372,9 +368,14 @@ function App() {
 
       {activeProject && activeProject.status === 'interviewing' && (
         <section className="handoff">
-          <button type="button" onClick={handleCopyForClaudeCode}>
-            {copiedForClaudeCode ? '✅ 복사됨 — Claude Code에서 /inbox' : '📋 Claude Code로 보내기'}
+          <button type="button" onClick={handleSendToClaudeCode}>
+            {handoff ? '✅ 보냈어요 — Claude Code에서 /inbox' : '📤 Claude Code로 보내기'}
           </button>
+          {handoff && !handoff.file && (
+            <p className="handoff-note">
+              ⚠️ 파일 저장에 실패해 클립보드로만 보냈어요. 다른 걸 복사하기 전에 /inbox를 실행해주세요.
+            </p>
+          )}
         </section>
       )}
 

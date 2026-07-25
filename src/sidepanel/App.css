@@ -178,6 +178,12 @@
   background: var(--accent-bg);
 }
 
+.handoff-note {
+  font-size: 12px;
+  color: var(--text);
+  margin: 8px 0 0;
+}
+
 .placeholder {
   font-size: 14px;
   color: var(--text);

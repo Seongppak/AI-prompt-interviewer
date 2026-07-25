@@ -25,6 +25,7 @@ export default defineManifest({
       js: ['src/content/content.ts'],
     },
   ],
-  permissions: ['sidePanel', 'activeTab', 'scripting', 'storage'],
+  // downloads: 완성된 프롬프트를 파일로 떨어뜨려 Claude Code의 /inbox가 읽게 한다.
+  permissions: ['sidePanel', 'activeTab', 'scripting', 'storage', 'downloads'],
   host_permissions: [...siteUrlPatterns, 'https://generativelanguage.googleapis.com/*'],
 })
