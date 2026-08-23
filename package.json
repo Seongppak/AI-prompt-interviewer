@@ -1,7 +1,10 @@
 {
   "name": "ai-prompt-interviewer",
   "private": true,
-  "version": "3.1.0",
+  "version": "4.0.0",
+  "description": "Desktop interviewer that rewrites prompts for AI tools",
+  "author": "Seongppak",
+  "main": "apps/desktop/electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +14,7 @@
     "build:test-app": "tsc -p tsconfig.test-app.json --noEmit && vite build --config vite.test-app.config.ts",
     "build:desktop": "node apps/desktop/native/build-interceptor.mjs && tsc -p tsconfig.desktop.json --noEmit && vite build --config vite.desktop.config.ts",
     "start:desktop": "npm run build:desktop && electron apps/desktop/electron/main.cjs",
+    "package:desktop:win": "npm run build:desktop && node apps/desktop/package-windows.mjs",
     "typecheck:core": "tsc -p packages/core/tsconfig.json --noEmit",
     "typecheck:browser-adapter": "tsc -p adapters/browser/tsconfig.json --noEmit",
     "typecheck:gemini-adapter": "tsc -p adapters/gemini/tsconfig.json --noEmit",
@@ -38,6 +42,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",

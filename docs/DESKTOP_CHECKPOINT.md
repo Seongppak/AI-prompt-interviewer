@@ -36,7 +36,7 @@ npm run start:desktop
 ## 검증
 
 ```text
-npm test                  21 files / 64 tests PASS
+npm test                  21 files / 69 tests PASS
 npm run typecheck:protocol PASS
 npm run build:desktop      PASS
 npm run lint               PASS
@@ -55,4 +55,4 @@ Global Hotkey 및 Clipboard Capture Adapter는 `docs/GLOBAL_CAPTURE_CHECKPOINT.m
 
 Codex·Claude Code 전달 Adapter는 `docs/DESKTOP_DELIVERY_ADAPTER_CHECKPOINT.md` 범위로 완료했다.
 
-다음 단계인 Windows 패키징과 설치 프로그램 생성은 사용자 승인 후 별도 진행한다.
+Windows x64 패키징과 NSIS 설치 프로그램 생성은 `docs/WINDOWS_PACKAGING_CHECKPOINT.md` 범위로 완료했다.

@@ -10,6 +10,12 @@ let interceptorProcess = null
 let interceptorError = ''
 let lastInterceptedWindow = ''
 
+function interceptorExecutablePath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'native', 'AIPIInterceptor.exe')
+    : path.resolve(__dirname, '../../../dist-native/AIPIInterceptor.exe')
+}
+
 function interceptorStatus() {
   return {
     enabled: interceptorProcess !== null,
@@ -50,7 +56,7 @@ function insertIntoLastInterceptedWindow(text) {
   const prompt = String(text ?? '')
   if (!prompt.trim() || prompt.length > 100000) return Promise.resolve({ ok: false, error: '입력할 프롬프트가 없습니다.' })
   clipboard.writeText(prompt)
-  const executable = path.resolve(__dirname, '../../../dist-native/AIPIInterceptor.exe')
+  const executable = interceptorExecutablePath()
   return new Promise((resolveInsert) => {
     const child = spawn(executable, [`--paste-window=${lastInterceptedWindow}`], {
       windowsHide: true,
@@ -69,7 +75,7 @@ function startInterceptor() {
     interceptorError = 'Windows에서만 사용할 수 있습니다.'
     return interceptorStatus()
   }
-  const executable = path.resolve(__dirname, '../../../dist-native/AIPIInterceptor.exe')
+  const executable = interceptorExecutablePath()
   let stdoutBuffer = ''
   interceptorError = ''
   const child = spawn(executable, [], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })

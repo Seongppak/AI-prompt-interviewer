@@ -45,11 +45,13 @@ npm run dev:test-app       # 로컬 테스트 앱 실행
 npm run build:test-app     # 전용 타입 검사 + 빌드
 npm run dev:desktop        # 실제 데스크톱 창 개발 실행
 npm run start:desktop      # 데스크톱 빌드 후 실행
+npm run package:desktop:win # Windows x64 NSIS 설치 파일 생성
 ```
 
 빌드 결과는 운영 확장의 `dist`와 분리된 `dist-test-app`에 생성된다. 기능 검증과 사용자
 체크포인트를 통과한 뒤에만 운영 Adapter에 연결하고, 배포는 사용자가 명시적으로 요청할 때만 한다.
 화면 상단의 **로그 확인** 메뉴에서 테스트 동작과 오류를 확인하거나 로그 파일로 받을 수 있다.
+Windows 설치 파일은 `release-desktop/AI Prompt Interviewer-Setup-<version>-x64.exe`에 생성된다.
 
 ## 쓰는 법
 
