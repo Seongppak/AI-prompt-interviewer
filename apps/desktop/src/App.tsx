@@ -224,7 +224,9 @@ export function App() {
       })
       setResultPrompt(optimized.prompt)
       await persistProject(session, optimized.prompt)
-      setNotice(`${target.displayName}용 최종 프롬프트를 만들었습니다.`)
+      setNotice(optimized.refined
+        ? `${target.displayName}용 프롬프트를 생성하고 품질 보정까지 완료했습니다.`
+        : `${target.displayName}용 최종 프롬프트를 만들었습니다.`)
     } catch (error) {
       const fallback = buildStructuredPrompt({
         originalPrompt: session.originalPrompt,
