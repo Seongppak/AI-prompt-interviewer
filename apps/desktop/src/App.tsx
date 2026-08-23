@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import targetsMarkdown from '../../../prompts/targets.md?raw'
 import { GeminiAIProvider } from '../../../adapters/gemini/src'
+import { DesktopChatTargetAdapter } from '../../../adapters/desktop/src'
 import {
   collectInterviewDecisions,
   composePrompt,
@@ -242,8 +243,16 @@ export function App() {
   async function insertOutputIntoSource() {
     if (!output || !capturedSourceTarget) return
     try {
-      const result = await window.aipiDesktop.interceptor.insertPrompt(output)
-      if (!result.ok) return setNotice(result.error, true)
+      const adapter = new DesktopChatTargetAdapter(capturedSourceTarget, {
+        isAvailable: () => window.aipiDesktop.platform === 'win32',
+        activeTargetId: () => capturedSourceTarget || null,
+        readPrompt: () => originalPrompt || null,
+        insertPrompt: async (prompt) => {
+          const result = await window.aipiDesktop.interceptor.insertPrompt(prompt)
+          return { inserted: result.ok, error: result.error }
+        },
+      })
+      await adapter.sendPrompt(output)
       setNotice('완성된 프롬프트를 원래 채팅 입력창에 입력했습니다. 확인한 뒤 직접 전송하세요.')
     } catch (error) {
       setNotice(`원래 채팅창에 입력하지 못했습니다: ${String(error)}`, true)

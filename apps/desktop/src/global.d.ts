@@ -8,7 +8,7 @@ interface InterceptorStatus {
 
 interface InterceptedPrompt {
   prompt: string
-  target: 'chatgpt' | 'claude' | 'codex' | 'test'
+  target: 'chatgpt' | 'claude' | 'claude-code' | 'codex' | 'test'
   source: string
   trigger: 'enter' | 'click'
 }

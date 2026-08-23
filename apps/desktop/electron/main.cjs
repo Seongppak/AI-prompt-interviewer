@@ -26,7 +26,7 @@ function handleInterceptorLine(line) {
   try {
     const event = JSON.parse(line)
     if (event?.type !== 'capture' || typeof event.prompt !== 'string') return
-    if (!['chatgpt', 'claude', 'codex', 'test'].includes(event.target)) return
+    if (!['chatgpt', 'claude', 'claude-code', 'codex', 'test'].includes(event.target)) return
     if (typeof event.source !== 'string' || !event.source.trim() || event.source.length > 80
       || event.source.includes('\r') || event.source.includes('\n') || event.source.includes('\0')) return
     if (typeof event.window !== 'string' || !/^\d{1,20}$/.test(event.window)) return

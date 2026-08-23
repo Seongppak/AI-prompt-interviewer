@@ -127,7 +127,13 @@ internal static class PromptInterceptor
         {
             AutomationElement focused = AutomationElement.FocusedElement;
             if (focused == null || focused.Current.ProcessId != processId || focused.Current.IsPassword) { Debug("focused-element-rejected"); return false; }
-            if (target.RequiresPromptContext && !HasPromptContext(focused)) { Debug("prompt-context-not-found"); return false; }
+            if (target.RequiresPromptContext)
+            {
+                string promptContext;
+                if (!TryGetPromptContext(focused, out promptContext)) { Debug("prompt-context-not-found"); return false; }
+                if (promptContext.Contains("claude"))
+                    target = new TargetProfile("claude-code", target.SourceName + " · Claude Code", true);
+            }
             string prompt = ReadText(focused);
             if (String.IsNullOrWhiteSpace(prompt) || prompt.Length > 100000) { Debug("focused-text-empty"); return false; }
             capture = new Capture(prompt.Trim(), target.TargetId, target.SourceName, trigger, foreground);
@@ -216,8 +222,11 @@ internal static class PromptInterceptor
         return false;
     }
 
-    private static bool HasPromptContext(AutomationElement element)
+    private static bool TryGetPromptContext(AutomationElement element, out string matchedContext)
     {
+        matchedContext = null;
+        bool matched = false;
+        StringBuilder context = new StringBuilder();
         string[] promptTokens = {
             "chat", "prompt", "ask", "agent", "copilot", "composer", "message", "assistant",
             "interactive", "질문", "메시지", "프롬프트", "에이전트", "채팅"
@@ -229,12 +238,19 @@ internal static class PromptInterceptor
             {
                 string descriptor = ((current.Current.AutomationId ?? "") + " "
                     + (current.Current.Name ?? "") + " " + (current.Current.ClassName ?? "")).ToLowerInvariant();
-                foreach (string token in promptTokens) if (descriptor.Contains(token)) return true;
+                context.Append(' ').Append(descriptor);
+                foreach (string token in promptTokens)
+                {
+                    if (!descriptor.Contains(token)) continue;
+                    matched = true;
+                    break;
+                }
                 current = TreeWalker.ControlViewWalker.GetParent(current);
             }
             catch { return false; }
         }
-        return false;
+        if (matched) matchedContext = context.ToString();
+        return matched;
     }
 
     private static bool PasteToWindow(IntPtr window)

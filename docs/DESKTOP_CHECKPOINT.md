@@ -53,5 +53,6 @@ Native UTF-8 self-test     PASS
 
 Global Hotkey 및 Clipboard Capture Adapter는 `docs/GLOBAL_CAPTURE_CHECKPOINT.md` 범위로 완료했다.
 
-1. 네이티브 재입력 경로를 공용 Protocol의 Codex·Claude Code 전달 Adapter로 연결
-2. Windows 패키징과 설치 프로그램은 사용자 승인 후 별도 진행
+Codex·Claude Code 전달 Adapter는 `docs/DESKTOP_DELIVERY_ADAPTER_CHECKPOINT.md` 범위로 완료했다.
+
+다음 단계인 Windows 패키징과 설치 프로그램 생성은 사용자 승인 후 별도 진행한다.

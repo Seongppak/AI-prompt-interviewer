@@ -15,6 +15,7 @@
     "typecheck:browser-adapter": "tsc -p adapters/browser/tsconfig.json --noEmit",
     "typecheck:gemini-adapter": "tsc -p adapters/gemini/tsconfig.json --noEmit",
     "typecheck:clipboard-adapter": "tsc -p adapters/clipboard/tsconfig.json --noEmit",
+    "typecheck:desktop-adapter": "tsc -p adapters/desktop/tsconfig.json --noEmit",
     "test:native-interceptor": "node apps/desktop/native/build-interceptor.mjs && node apps/desktop/native/test-interceptor.mjs",
     "typecheck:protocol": "tsc -p packages/protocol/tsconfig.json --noEmit",
     "test": "vitest run",
