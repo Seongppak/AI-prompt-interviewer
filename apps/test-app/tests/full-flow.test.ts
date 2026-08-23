@@ -47,10 +47,10 @@ describe('Test App full Core flow', () => {
 
     expect(optimized.optimized).toBe(true)
     expect(optimized.targetId).toBe('codex')
-    expect(optimized.prompt).toContain('작업 지침')
+    expect(optimized.prompt).toContain('## 수행 지침')
     expect(optimized.prompt).toContain('React로 상품 검색과 장바구니가 있는 쇼핑몰 웹사이트')
     expect(optimized.prompt).toContain('결과물 형태: 완성 결과물')
-    expect(optimized.prompt).toContain('상세 수준: 구현 가능한 수준')
+    expect(optimized.prompt).toContain('내용 및 설명 상세도: 구현 가능한 수준')
     expect(optimized.prompt).not.toContain('어떤 형태의 결과물이 필요합니까?')
     expect(optimized.prompt).not.toContain('다음 조건을 참고해서 답변해줘')
   })
@@ -61,6 +61,33 @@ describe('Test App full Core flow', () => {
       targetId: 'perplexity',
       displayName: 'Perplexity',
     })
+  })
+
+  it('rewrites a short finance-book request into a detailed production prompt', async () => {
+    const originalPrompt = '한국 증권 시장에서 사용 가능한 전술들을 다룬 책을 만들어라.'
+    const generated = await generator.generate(originalPrompt)
+    expect(generated.recommendation?.targetId).toBe('claude')
+    expect(generated.questions.map(({ id }) => id)).toEqual(['audience', 'strategy_type', 'detail_level'])
+
+    let session = engine.questionsGenerated(
+      engine.create({ id: 'finance-book', originalPrompt, createdAt: 'now', sourceTargetId: 'chatgpt' }),
+      generated,
+    )
+    session = engine.answer(session, 'audience', '중급 투자자')
+    session = engine.answer(session, 'strategy_type', '퀀트 투자')
+    session = engine.answer(session, 'detail_level', '상세함')
+
+    const optimized = await optimizer.optimize({
+      originalPrompt,
+      interviewDecisions: collectInterviewDecisions(session.questions, session.answers),
+      target: findTargetProfile('claude')!,
+    })
+    expect(optimized.prompt).toContain('퀀트 투자 전략가이자 전문 금융 도서 저자')
+    expect(optimized.prompt).toContain('주요 대상 독자: 중급 투자자')
+    expect(optimized.prompt).toContain('핵심 접근 방식: 퀀트 투자')
+    expect(optimized.prompt).toContain('필요한 데이터, 진입·청산 규칙, 위험 관리')
+    expect(optimized.prompt).toContain('전체 목차, 장별 본문')
+    expect(optimized.prompt).not.toContain('이 책의 주요 대상 독자는 누구입니까?')
   })
 
   it('skips the interview when the prompt is already sufficiently detailed', async () => {

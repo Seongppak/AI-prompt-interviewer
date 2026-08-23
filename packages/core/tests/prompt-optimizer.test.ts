@@ -43,6 +43,8 @@ describe('PromptOptimizer', () => {
     expect(captured?.prompt).toContain('"answer": "한국어"')
     expect(captured?.prompt).toContain('질문과 답변 목록을 덧붙이거나')
     expect(captured?.prompt).toContain('원문에 포함되어 있었던 것처럼')
+    expect(captured?.prompt).toContain('실행 가능한 새 지시문으로 재설계')
+    expect(captured?.prompt).toContain('역할, 목표, 요구사항, 수행 지침, 출력 형식, 품질 기준')
   })
 
   it('returns the original prompt in best-effort mode when the provider fails', async () => {

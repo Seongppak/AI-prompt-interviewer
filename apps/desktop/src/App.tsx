@@ -4,7 +4,7 @@ import { GeminiAIProvider } from '../../../adapters/gemini/src'
 import { DesktopChatTargetAdapter } from '../../../adapters/desktop/src'
 import {
   collectInterviewDecisions,
-  composePrompt,
+  buildStructuredPrompt,
   DEFAULT_TARGET_PROFILES,
   findTargetProfile,
   InterviewEngine,
@@ -64,6 +64,7 @@ export function App() {
       if (!storedKey) return
       setApiKey(storedKey)
       setApiKeySaved(true)
+      setProviderMode('gemini')
     }).catch((error) => setNotice(`저장된 API 키를 불러오지 못했습니다: ${String(error)}`, true))
     void projectRepository.list().then((stored) => {
       setProjects(stored)
@@ -225,7 +226,11 @@ export function App() {
       await persistProject(session, optimized.prompt)
       setNotice(`${target.displayName}용 최종 프롬프트를 만들었습니다.`)
     } catch (error) {
-      const fallback = composePrompt(session.originalPrompt, session.questions, session.answers)
+      const fallback = buildStructuredPrompt({
+        originalPrompt: session.originalPrompt,
+        interviewDecisions: collectInterviewDecisions(session.questions, session.answers),
+        target,
+      })
       setResultPrompt(fallback)
       await persistProject(session, fallback)
       setNotice(`AI 재작성에 실패해 답변이 포함된 프롬프트를 표시합니다: ${String(error)}`, true)
