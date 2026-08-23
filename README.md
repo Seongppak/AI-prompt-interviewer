@@ -84,7 +84,8 @@ URL 프래그먼트(`#aipi=`)로 넘기기 때문에 대상 사이트가 프리�
 |---|---|
 | `packages/core/` | 플랫폼 독립 인터뷰·질문 생성·AI 추천·Prompt Builder/Optimizer |
 | `apps/test-app/` | 운영 연결 전 Fake Provider 기반 전체 흐름 검증 |
-| `apps/desktop/` | Core 기반 Electron 데스크톱 앱, Clipboard IPC, 프로젝트 영구 저장 |
+| `apps/desktop/` | Core 기반 Electron 데스크톱 앱, 전역 캡처, Clipboard IPC, 프로젝트 영구 저장 |
+| `adapters/clipboard/` | Desktop/CLI에서 재사용하는 Clipboard Target Adapter |
 | `packages/protocol/` | Desktop/Browser/CLI 공용 메시지·이벤트·Target Adapter 경계 |
 | `adapters/browser/` | 기존 확장과 분리된 Browser Target/Storage Adapter shadow 구현 |
 | `adapters/gemini/` | Core의 AI 요청을 Gemini `generateContent`로 실행하는 독립 Adapter |

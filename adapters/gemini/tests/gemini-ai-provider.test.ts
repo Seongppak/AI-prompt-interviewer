@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GeminiAIProvider } from '../src'
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -9,6 +9,21 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe('GeminiAIProvider', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('binds the browser fetch function to globalThis', async () => {
+    vi.stubGlobal('fetch', function (this: unknown) {
+      if (this !== globalThis) throw new TypeError('Illegal invocation')
+      return Promise.resolve(jsonResponse({
+        candidates: [{ content: { parts: [{ text: '바인딩된 응답' }] } }],
+      }))
+    })
+    const provider = new GeminiAIProvider({ apiKey: 'test-secret', models: ['gemini'] })
+
+    await expect(provider.generate({ purpose: 'prompt-optimization', prompt: 'x' }))
+      .resolves.toEqual({ text: '바인딩된 응답', model: 'gemini' })
+  })
+
   it('sends the Core optimization prompt to Gemini and returns rewritten text', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({
       candidates: [{ content: { parts: [{ text: '새로 작성된 최종 프롬프트' }] } }],

@@ -45,7 +45,8 @@ export class GeminiAIProvider implements AIProvider {
   constructor(options: GeminiAIProviderOptions) {
     if (!options.apiKey.trim()) throw new Error('Gemini API 키가 필요합니다.')
     this.options = options
-    this.fetcher = options.fetcher ?? fetch
+    // Window.fetch는 잘못된 this로 호출되면 Electron/Browser에서 Illegal invocation이 발생한다.
+    this.fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis)
     this.timeoutMs = options.timeoutMs ?? 20_000
   }
 

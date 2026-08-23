@@ -83,6 +83,7 @@ out
 dist
 dist-test-app
 dist-desktop
+dist-native
 .output
 
 # Gatsby files

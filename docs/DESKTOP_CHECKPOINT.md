@@ -10,8 +10,11 @@
 - 데스크톱 고유 연결은 Electron preload/IPC 경계 뒤에 둔다.
   - 시스템 클립보드에서 원본 프롬프트 가져오기
   - 완성된 프롬프트를 시스템 클립보드에 복사
+  - 전역 단축키로 복사된 프롬프트 캡처
+  - 지원되는 데스크톱 AI 앱과 IDE AI 채팅의 Enter/전송 버튼 가로채기
+  - 완성 프롬프트를 캡처한 원래 채팅 입력창으로 반환
 - Provider는 로컬 시뮬레이션과 실제 Gemini API 중 선택할 수 있다.
-- Gemini API 키는 React 메모리에만 유지하고 저장하지 않는다.
+- Gemini API 키는 사용자가 저장 버튼을 눌렀을 때만 Windows `safeStorage`로 암호화해 저장한다.
 - 선호도 데이터는 데스크톱 앱의 localStorage에 별도 저장한다.
 - Chrome API, Chrome Storage, 확장 프로그램 메시지에 의존하지 않는다.
 
@@ -33,11 +36,12 @@ npm run start:desktop
 ## 검증
 
 ```text
-npm test                  17 files / 52 tests PASS
+npm test                  21 files / 64 tests PASS
 npm run typecheck:protocol PASS
 npm run build:desktop      PASS
 npm run lint               PASS
 Electron window            실행 및 렌더링 확인
+Native UTF-8 self-test     PASS
 ```
 
 현재 실행 창에서 사용자 입력이 감지된 뒤에는 자동 UI 입력을 중단했다. 창 렌더링, Desktop 표시,
@@ -47,6 +51,7 @@ Electron window            실행 및 렌더링 확인
 
 프로젝트/인터뷰 기록 영구 저장은 `docs/PERSISTENCE_CHECKPOINT.md` 범위로 완료했다.
 
-1. Global Hotkey 및 선택 텍스트/클립보드 캡처 Adapter
-2. Codex·Claude Code 전달 Adapter
-3. Windows 패키징과 설치 프로그램은 사용자 승인 후 별도 진행
+Global Hotkey 및 Clipboard Capture Adapter는 `docs/GLOBAL_CAPTURE_CHECKPOINT.md` 범위로 완료했다.
+
+1. 네이티브 재입력 경로를 공용 Protocol의 Codex·Claude Code 전달 Adapter로 연결
+2. Windows 패키징과 설치 프로그램은 사용자 승인 후 별도 진행

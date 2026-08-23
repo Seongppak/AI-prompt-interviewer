@@ -8,4 +8,21 @@
 .project-toolbar { display: grid; grid-template-columns: minmax(220px, 1.3fr) minmax(220px, 1fr) auto auto; gap: 10px; margin: 18px 56px 0; }
 .project-toolbar select, .project-toolbar input, .project-toolbar button { min-height: 44px; }
 .danger-button { color: #ff9d9d; border-color: rgba(255, 100, 100, .35) !important; }
+.api-key-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; }
+.api-key-row button { white-space: nowrap; }
+.api-key-row .save-key-button { border-color: rgba(103, 232, 193, .45); color: #8de2c6; }
+.api-key-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.api-key-meta .text-button { color: #ff9d9d; font-size: 12px; }
+.shortcut-hint { display: flex; justify-content: space-between; gap: 18px; margin: 10px 56px 0; padding: 10px 14px; border: 1px solid rgba(103, 232, 193, .25); border-radius: 10px; color: #9fb0d0; font-size: 12px; }
+.shortcut-hint strong { color: #8de2c6; }
+.shortcut-hint.shortcut-error { border-color: rgba(255, 100, 100, .3); }
+.shortcut-hint.shortcut-error strong { color: #ff9d9d; }
+.interceptor-bar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px 18px; margin: 10px 56px 0; padding: 14px; border: 1px solid rgba(132, 116, 255, .28); border-radius: 12px; background: rgba(25, 24, 52, .55); }
+.interceptor-bar div { display: grid; gap: 4px; }
+.interceptor-bar strong { color: #d4d8e8; }
+.interceptor-bar span { color: #8f9ab5; font-size: 12px; }
+.interceptor-bar.interceptor-on { border-color: rgba(103, 232, 193, .45); box-shadow: inset 3px 0 #67e8c1; }
+.interceptor-bar.interceptor-on strong { color: #8de2c6; }
+.interceptor-bar.interceptor-error { border-color: rgba(255, 100, 100, .4); }
+.interceptor-bar small { grid-column: 1 / -1; color: #ff9d9d; }
 @media (max-width: 900px) { .project-toolbar { grid-template-columns: 1fr 1fr; margin-inline: 24px; } }
