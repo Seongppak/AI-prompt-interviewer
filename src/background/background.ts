@@ -1,4 +1,8 @@
 import { log } from '../shared/logger'
+import {
+  registerOriginalQuestionListener,
+  type ChromeRuntimeMessagePort,
+} from '../../adapters/browser/src'
 import { getApiKey } from '../shared/settings'
 import { createProject, updateProject } from '../shared/project'
 import { getSiteConfig } from '../shared/sites'
@@ -54,12 +58,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 })
 
-interface OriginalQuestionMessage {
-  type: 'ORIGINAL_QUESTION'
-  question: string
-  hostname: string
-}
-
 async function handleOriginalQuestion(question: string, hostname: string): Promise<void> {
   const project = await createProject(question, hostname)
 
@@ -109,9 +107,7 @@ chrome.action.onClicked.addListener((tab) => {
 // 이전 질문의 생성이 끝나기 전에 새 ORIGINAL_QUESTION이 들어오면 중복 호출을 막는다.
 let isGenerating = false
 
-chrome.runtime.onMessage.addListener((message: OriginalQuestionMessage, sender) => {
-  if (message.type !== 'ORIGINAL_QUESTION') return
-
+registerOriginalQuestionListener(chrome.runtime as unknown as ChromeRuntimeMessagePort, ({ message, sender }) => {
   log('background', 'info', 'received ORIGINAL_QUESTION', { question: message.question })
 
   if (sender.tab?.id !== undefined) {

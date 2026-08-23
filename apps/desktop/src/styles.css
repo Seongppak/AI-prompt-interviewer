@@ -1,0 +1,11 @@
+.desktop-badge { display: flex; gap: 8px; align-items: center; color: #9fb0d0; }
+.desktop-badge strong { color: #8de2c6; }
+.clipboard-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.clipboard-row button { flex: 1; }
+.desktop-status { margin: 14px 0 0; color: #8de2c6; font-size: 13px; }
+.desktop-status.error { color: #ff9d9d; }
+.output-actions { display: flex; gap: 10px; align-items: center; }
+.project-toolbar { display: grid; grid-template-columns: minmax(220px, 1.3fr) minmax(220px, 1fr) auto auto; gap: 10px; margin: 18px 56px 0; }
+.project-toolbar select, .project-toolbar input, .project-toolbar button { min-height: 44px; }
+.danger-button { color: #ff9d9d; border-color: rgba(255, 100, 100, .35) !important; }
+@media (max-width: 900px) { .project-toolbar { grid-template-columns: 1fr 1fr; margin-inline: 24px; } }

@@ -146,8 +146,11 @@ function App() {
     setStatus(null)
     setIsInserting(true)
     try {
-      const basePrompt = composePrompt(activeProject.originalQuestion, questions, answers)
-      const prompt = await getBestEffortPrompt(basePrompt, activeSiteName)
+      const prompt = await getBestEffortPrompt({
+        originalPrompt: activeProject.originalQuestion,
+        questions,
+        answers,
+      }, activeSiteName)
       const result = await insertIntoAiTab(prompt, activeProject.sourceHostname)
       setStatus({ result, siteName: activeSiteName })
     } catch {
@@ -182,8 +185,11 @@ function App() {
       setStatus(null)
       setIsInserting(true)
       try {
-        const basePrompt = composePrompt(activeProject.originalQuestion, questions, answers)
-        const prompt = await getBestEffortPrompt(basePrompt, recommendedSite!)
+        const prompt = await getBestEffortPrompt({
+          originalPrompt: activeProject.originalQuestion,
+          questions,
+          answers,
+        }, recommendedSite!)
         const result = await openAndInsertPrompt(url, prompt)
         setStatus({ result, siteName: recommendedSite! })
       } catch {

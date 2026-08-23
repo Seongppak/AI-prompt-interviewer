@@ -1,0 +1,5 @@
+{
+  "name": "@aipi/gemini-adapter",
+  "private": true,
+  "type": "module"
+}

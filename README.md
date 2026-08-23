@@ -33,6 +33,24 @@ npm run sync    # git pull + 빌드
 빌드만으로는 반영되지 않고, Chrome 재시작으로도 안 된다.
 `prompts/targets.md`만 고쳤다면 Claude Code 쪽은 즉시 반영된다.
 
+## 운영 연결 전 테스트 앱
+
+새 Core 로직과 기능은 운영 확장에 연결하기 전에 별도의 테스트 앱에서 먼저 검증한다.
+기본값은 Fake Provider이며, 화면에서 **실제 Gemini API** 모드를 선택하면 기존 확장과 같은
+Gemini `generateContent` 흐름도 검증할 수 있다. 테스트 앱에 입력한 API 키는 페이지 메모리에만
+유지되고 Storage나 로그에 저장되지 않는다. 테스트 앱은 Chrome API와 운영 Storage를 사용하지 않는다.
+
+```bash
+npm run dev:test-app       # 로컬 테스트 앱 실행
+npm run build:test-app     # 전용 타입 검사 + 빌드
+npm run dev:desktop        # 실제 데스크톱 창 개발 실행
+npm run start:desktop      # 데스크톱 빌드 후 실행
+```
+
+빌드 결과는 운영 확장의 `dist`와 분리된 `dist-test-app`에 생성된다. 기능 검증과 사용자
+체크포인트를 통과한 뒤에만 운영 Adapter에 연결하고, 배포는 사용자가 명시적으로 요청할 때만 한다.
+화면 상단의 **로그 확인** 메뉴에서 테스트 동작과 오류를 확인하거나 로그 파일로 받을 수 있다.
+
 ## 쓰는 법
 
 ### 브라우저에서
@@ -64,6 +82,12 @@ URL 프래그먼트(`#aipi=`)로 넘기기 때문에 대상 사이트가 프리�
 
 | 경로 | 역할 |
 |---|---|
+| `packages/core/` | 플랫폼 독립 인터뷰·질문 생성·AI 추천·Prompt Builder/Optimizer |
+| `apps/test-app/` | 운영 연결 전 Fake Provider 기반 전체 흐름 검증 |
+| `apps/desktop/` | Core 기반 Electron 데스크톱 앱, Clipboard IPC, 프로젝트 영구 저장 |
+| `packages/protocol/` | Desktop/Browser/CLI 공용 메시지·이벤트·Target Adapter 경계 |
+| `adapters/browser/` | 기존 확장과 분리된 Browser Target/Storage Adapter shadow 구현 |
+| `adapters/gemini/` | Core의 AI 요청을 Gemini `generateContent`로 실행하는 독립 Adapter |
 | `src/content/` | 질문 가로채기, 입력창에 프롬프트 삽입, `#aipi=` 수신 |
 | `src/background/` | Gemini로 인터뷰 문항 생성, 사이드패널 관리 |
 | `src/sidepanel/` | 인터뷰 UI, 프롬프트 조립·최적화, Claude Code로 전달 |
@@ -73,6 +97,9 @@ URL 프래그먼트(`#aipi=`)로 넘기기 때문에 대상 사이트가 프리�
 
 `prompts/targets.md`는 확장과 Claude Code 스킬이 **함께 읽는 단일 원본**이다.
 확장은 빌드 시 `?raw`로 가져오고, 스킬은 런타임에 직접 읽는다.
+
+공용 Core를 변경할 때는 `npm test`, `npm run build:test-app`, `npm run build` 순서로
+검증하고, 테스트 앱 체크포인트를 통과한 변경만 운영 Adapter에 연결한다.
 
 ## 저장 위치
 

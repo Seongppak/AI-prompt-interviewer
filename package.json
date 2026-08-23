@@ -5,11 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:test-app": "vite --config vite.test-app.config.ts",
+    "dev:desktop": "node apps/desktop/dev.mjs",
     "build": "tsc -b && vite build",
+    "build:test-app": "tsc -p tsconfig.test-app.json --noEmit && vite build --config vite.test-app.config.ts",
+    "build:desktop": "tsc -p tsconfig.desktop.json --noEmit && vite build --config vite.desktop.config.ts",
+    "start:desktop": "npm run build:desktop && electron apps/desktop/electron/main.cjs",
+    "typecheck:core": "tsc -p packages/core/tsconfig.json --noEmit",
+    "typecheck:browser-adapter": "tsc -p adapters/browser/tsconfig.json --noEmit",
+    "typecheck:gemini-adapter": "tsc -p adapters/gemini/tsconfig.json --noEmit",
+    "typecheck:protocol": "tsc -p packages/protocol/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:core": "vitest run packages/core",
     "setup": "node scripts/setup-machine.mjs",
     "sync": "git pull && npm run build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:test-app": "vite preview --config vite.test-app.config.ts"
   },
   "dependencies": {
     "react": "^19.2.7",
@@ -22,8 +34,10 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "electron": "^43.4.1",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.11"
   }
 }
