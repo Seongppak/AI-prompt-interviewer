@@ -3,6 +3,9 @@
 AI 사이트에 질문하기 전에 버튼 기반 인터뷰로 프롬프트를 보강해주는 Chrome 확장 프로그램.
 Claude Code와도 양방향으로 연결된다.
 
+> 이 저장소는 Chrome 확장 프로그램 전용입니다. Windows 데스크톱 앱은
+> [AI-prompt-interviewer-desktop](https://github.com/Seongppak/AI-prompt-interviewer-desktop)에서 관리합니다.
+
 ## 새 기기에서 시작하기
 
 ```bash
