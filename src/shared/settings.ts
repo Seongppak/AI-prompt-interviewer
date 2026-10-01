@@ -25,6 +25,17 @@ export async function setExtensionEnabled(enabled: boolean): Promise<void> {
   await setStored(ENABLED_KEY, enabled)
 }
 
+export type BypassShortcut = 'ctrl_enter' | 'alt_enter'
+const BYPASS_SHORTCUT_KEY = 'bypass_shortcut'
+
+export async function getBypassShortcut(): Promise<BypassShortcut> {
+  return getStored<BypassShortcut>(BYPASS_SHORTCUT_KEY, 'ctrl_enter')
+}
+
+export async function setBypassShortcut(shortcut: BypassShortcut): Promise<void> {
+  await setStored(BYPASS_SHORTCUT_KEY, shortcut)
+}
+
 export type Theme = 'system' | 'light' | 'dark'
 const THEME_KEY = 'theme'
 

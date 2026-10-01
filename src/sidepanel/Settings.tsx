@@ -1,10 +1,25 @@
 import { useEffect, useState } from 'react'
-import { clearApiKey, getApiKey, getTheme, setApiKey, setTheme, type Theme } from '../shared/settings'
+import {
+  clearApiKey,
+  getApiKey,
+  getBypassShortcut,
+  getTheme,
+  setApiKey,
+  setBypassShortcut,
+  setTheme,
+  type BypassShortcut,
+  type Theme,
+} from '../shared/settings'
 
 const THEME_LABELS: Record<Theme, string> = {
   system: '시스템 설정',
   light: '라이트',
   dark: '다크',
+}
+
+const BYPASS_SHORTCUT_LABELS: Record<BypassShortcut, string> = {
+  ctrl_enter: 'Ctrl+Enter (Mac: ⌘+Enter)',
+  alt_enter: 'Alt+Enter (Mac: ⌥+Enter)',
 }
 
 export function Settings() {
@@ -13,12 +28,14 @@ export function Settings() {
   const [hasKey, setHasKey] = useState(false)
   const [status, setStatus] = useState('')
   const [theme, setThemeState] = useState<Theme>('system')
+  const [bypassShortcut, setBypassShortcutState] = useState<BypassShortcut>('ctrl_enter')
 
   async function refresh() {
     const existing = await getApiKey()
     setHasKey(existing.length > 0)
     setKeyInput('')
     setThemeState(await getTheme())
+    setBypassShortcutState(await getBypassShortcut())
   }
 
   useEffect(() => {
@@ -49,6 +66,11 @@ export function Settings() {
     await setTheme(next)
   }
 
+  async function handleBypassShortcutChange(next: BypassShortcut) {
+    setBypassShortcutState(next)
+    await setBypassShortcut(next)
+  }
+
   return (
     <section className="settings">
       <button type="button" onClick={toggle}>
@@ -70,6 +92,24 @@ export function Settings() {
               </button>
             ))}
           </div>
+
+          <label className="settings-label" htmlFor="bypass-shortcut-select">
+            인터뷰 없이 바로 전송
+          </label>
+          <select
+            id="bypass-shortcut-select"
+            value={bypassShortcut}
+            onChange={(event) =>
+              handleBypassShortcutChange(event.target.value as BypassShortcut)
+            }
+          >
+            {(Object.keys(BYPASS_SHORTCUT_LABELS) as BypassShortcut[]).map((option) => (
+              <option key={option} value={option}>
+                {BYPASS_SHORTCUT_LABELS[option]}
+              </option>
+            ))}
+          </select>
+          <p className="settings-help">Enter 또는 보내기 버튼을 빠르게 두 번 눌러도 바로 전송됩니다.</p>
 
           <label className="settings-label" htmlFor="api-key-input">
             Gemini API 키

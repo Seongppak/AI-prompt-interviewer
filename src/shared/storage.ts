@@ -15,8 +15,9 @@ const SYNCED_KEYS = new Set([
 // 아래는 의도적으로 local에 둔다:
 //   gemini_api_key    — 자격증명이다. sync에 올리면 Chrome 동기화를 통해 Google 서버를
 //                       거치게 되므로, 기기마다 직접 입력하는 쪽을 택했다.
-//   extension_enabled — 순간적인 토글이다. 사이드패널을 닫으면 꺼지는데(handleClosePanel),
-//                       공유하면 반대편 기기의 가로채기가 갑자기 죽는다.
+//   extension_enabled — 기기별로 켜고 끄는 순간적인 토글이다. 공유하면 반대편 기기의
+//                       가로채기가 갑자기 죽을 수 있다.
+//   bypass_shortcut   — 브라우저/OS별 순간 조작 설정이다.
 //   projects          — 프로젝트 30개는 sync의 항목당 8KB 한도를 쉽게 넘는다.
 //   active_project_id — projects가 local이므로 함께 둔다.
 //   debug_logs        — 최대 500개 항목. 한도를 크게 넘고 공유할 이유도 없다.

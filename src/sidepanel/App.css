@@ -278,13 +278,21 @@
   color: var(--text);
 }
 
-.settings-body input {
+.settings-body input,
+.settings-body select {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   color: var(--text-h);
   font-size: 13px;
+}
+
+.settings-help {
+  margin: -2px 0 4px;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .theme-options {

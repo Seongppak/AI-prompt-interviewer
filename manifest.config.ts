@@ -23,6 +23,10 @@ export default defineManifest({
     {
       matches: siteUrlPatterns,
       js: ['src/content/content.ts'],
+      // Register capture-phase handlers before each site's app installs its own
+      // delegated pointer/click handlers. Otherwise a page-level handler can
+      // submit the prompt before the extension sees the click.
+      run_at: 'document_start',
     },
   ],
   // downloads: 완성된 프롬프트를 파일로 떨어뜨려 Claude Code의 /inbox가 읽게 한다.

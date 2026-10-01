@@ -135,9 +135,7 @@ function App() {
     setStatus(null)
   }
 
-  async function handleClosePanel() {
-    // 가로채기까지 꺼야 창을 닫은 뒤 Enter를 눌러도 패널이 다시 튀어나오지 않는다.
-    await setExtensionEnabled(false)
+  function handleClosePanel() {
     window.close()
   }
 

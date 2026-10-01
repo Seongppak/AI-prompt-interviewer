@@ -1,8 +1,14 @@
 import { log } from '../shared/logger'
 import { getSiteConfig } from '../shared/sites'
-import { getExtensionEnabled } from '../shared/settings'
+import { getBypassShortcut, getExtensionEnabled, type BypassShortcut } from '../shared/settings'
 import { decodePromptHash } from '../shared/promptLink'
 import { subscribeStored } from '../shared/storage'
+import {
+  DOUBLE_SEND_WINDOW_MS,
+  isDoubleSend,
+  matchesBypassShortcut,
+  type SendAttempt,
+} from './sendBypass'
 
 interface InsertPromptMessage {
   type: 'INSERT_PROMPT'
@@ -13,15 +19,26 @@ const siteConfig = getSiteConfig(location.hostname)
 
 // After we programmatically insert the interviewed prompt, the user's next
 // Enter/click should actually send it rather than be caught again.
-let bypassNextSend = false
+let insertedPrompt: { input: HTMLElement; question: string } | null = null
+// 사이트의 Enter 핸들러가 click을 호출해도 현재 전송 안에서만 우회한다.
+let isSendingImmediately = false
+let bypassShortcut: BypassShortcut = 'ctrl_enter'
+let pendingSend: (SendAttempt & { timer: ReturnType<typeof setTimeout> }) | null = null
 
 // 사이드패널의 전원 버튼으로 언제든 끄고 켤 수 있는 전역 스위치.
 let isExtensionEnabled = true
 getExtensionEnabled().then((enabled) => {
   isExtensionEnabled = enabled
 })
+getBypassShortcut().then((shortcut) => {
+  bypassShortcut = shortcut
+})
 subscribeStored('extension_enabled', (value) => {
   isExtensionEnabled = value !== false
+  if (!isExtensionEnabled) clearPendingSend()
+})
+subscribeStored('bypass_shortcut', (value) => {
+  if (value === 'ctrl_enter' || value === 'alt_enter') bypassShortcut = value
 })
 
 function findChatInput(): HTMLElement | null {
@@ -60,7 +77,7 @@ function insertPrompt(text: string): boolean {
   }
 
   document.execCommand('insertText', false, text)
-  bypassNextSend = true
+  insertedPrompt = { input, question: getInputText(input) }
   log('content', 'info', 'prompt inserted')
   return true
 }
@@ -109,40 +126,149 @@ function captureOriginalQuestion(question: string): void {
     })
 }
 
-function handleSendTrigger(event: Event, input: HTMLElement): void {
-  if (!isExtensionEnabled) return
+function clearPendingSend(): void {
+  if (!pendingSend) return
+  clearTimeout(pendingSend.timer)
+  pendingSend = null
+}
 
-  if (bypassNextSend) {
-    bypassNextSend = false
-    return
-  }
+function scheduleIntercept(input: HTMLElement, question: string): void {
+  clearPendingSend()
+  const attempt: SendAttempt = { input, question, at: Date.now() }
+  const timer = setTimeout(() => {
+    if (pendingSend?.timer !== timer) return
+    pendingSend = null
+    if (!isExtensionEnabled) return
 
-  const question = getInputText(input)
-  if (!question) return
+    // 대기하는 동안 사용자가 문구를 고쳤다면 최신 입력을 인터뷰 대상으로 삼는다.
+    const latestQuestion = getInputText(input)
+    if (latestQuestion) captureOriginalQuestion(latestQuestion)
+  }, DOUBLE_SEND_WINDOW_MS)
+  pendingSend = { ...attempt, timer }
+}
 
+function stopSendEvent(event: Event): void {
   event.preventDefault()
   event.stopPropagation()
   event.stopImmediatePropagation()
-  captureOriginalQuestion(question)
+}
+
+function stopEarlyButtonEvent(event: Event, input: HTMLElement): void {
+  if (!isExtensionEnabled || isSendingImmediately || !getInputText(input)) return
+  if (insertedPrompt?.input === input && insertedPrompt.question === getInputText(input)) return
+
+  // 일부 사이트는 click보다 이른 pointer/mouse 이벤트에서 전송을 시작한다.
+  // 기본 동작까지 취소하면 뒤따르는 click이 생성되지 않을 수 있으므로 전파만 막고,
+  // 실제 단일/이중 전송 판정과 preventDefault는 click 핸들러에서 처리한다.
+  event.stopPropagation()
+  event.stopImmediatePropagation()
+}
+
+function sendImmediately(event: Event): boolean {
+  clearPendingSend()
+  const sendButton = document.querySelector<HTMLElement>(siteConfig!.sendButtonSelector)
+  const canClick = sendButton && !sendButton.matches(':disabled, [aria-disabled="true"]')
+
+  // 버튼을 찾았다면 일반 클릭으로 바꿔 각 사이트의 단축키 해석 차이와 무관하게 전송한다.
+  // 버튼이 없다면 원래 키 이벤트를 그대로 통과시켜 사이트 자체 처리를 시도한다.
+  if (canClick) {
+    stopSendEvent(event)
+    isSendingImmediately = true
+    try {
+      sendButton.click()
+    } finally {
+      isSendingImmediately = false
+    }
+  }
+  return !!canClick
+}
+
+function sendImmediatelyWithShortcut(event: KeyboardEvent): void {
+  insertedPrompt = null
+  const clickedSendButton = sendImmediately(event)
+  log('content', 'info', 'keyboard shortcut bypassed interview', {
+    bypassShortcut,
+    clickedSendButton,
+  })
+}
+
+function handleSendTrigger(event: Event, input: HTMLElement): void {
+  if (!isExtensionEnabled || isSendingImmediately) return
+
+  const question = getInputText(input)
+  const shouldSendInsertedPrompt = insertedPrompt?.input === input && insertedPrompt.question === question
+  insertedPrompt = null
+  if (shouldSendInsertedPrompt) {
+    clearPendingSend()
+    if (event.type === 'keydown') sendImmediately(event)
+    return
+  }
+
+  if (!question) return
+
+  const attempt: SendAttempt = { input, question, at: Date.now() }
+  if (isDoubleSend(pendingSend, attempt)) {
+    clearPendingSend()
+    if (event.type === 'keydown') sendImmediately(event)
+    log('content', 'info', 'double send bypassed interview')
+    return
+  }
+
+  stopSendEvent(event)
+  scheduleIntercept(input, question)
 }
 
 if (siteConfig) {
-  document.addEventListener(
+  window.addEventListener(
     'keydown',
     (event) => {
       if (event.key !== 'Enter' || event.shiftKey) return
+      if (!isExtensionEnabled || isSendingImmediately || event.isComposing) return
       const input = findChatInput()
       if (!input || !input.contains(event.target as Node)) return
+      // 키를 누르고 있을 때 발생하는 repeat는 의도적인 두 번 입력으로 보지 않는다.
+      if (event.repeat) {
+        stopSendEvent(event)
+        return
+      }
+      if (matchesBypassShortcut(event, bypassShortcut)) {
+        sendImmediatelyWithShortcut(event)
+        return
+      }
       handleSendTrigger(event, input)
     },
     true,
   )
 
-  document.addEventListener(
+  window.addEventListener(
+    'pointerdown',
+    (event) => {
+      const target = event.target as Element | null
+      if (!target?.closest(siteConfig.sendButtonSelector)) return
+      const input = findChatInput()
+      if (!input) return
+      stopEarlyButtonEvent(event, input)
+    },
+    true,
+  )
+
+  window.addEventListener(
+    'mousedown',
+    (event) => {
+      const target = event.target as Element | null
+      if (!target?.closest(siteConfig.sendButtonSelector)) return
+      const input = findChatInput()
+      if (!input) return
+      stopEarlyButtonEvent(event, input)
+    },
+    true,
+  )
+
+  window.addEventListener(
     'click',
     (event) => {
-      const target = event.target as HTMLElement
-      if (!target.closest(siteConfig.sendButtonSelector)) return
+      const target = event.target as Element | null
+      if (!target?.closest(siteConfig.sendButtonSelector)) return
       const input = findChatInput()
       if (!input) return
       handleSendTrigger(event, input)

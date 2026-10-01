@@ -1,7 +1,7 @@
 {
   "name": "ai-prompt-interviewer",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Desktop interviewer that rewrites prompts for AI tools",
   "author": "Seongppak",
   "main": "apps/desktop/electron/main.cjs",
