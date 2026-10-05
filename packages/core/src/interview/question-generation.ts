@@ -54,6 +54,8 @@ export function buildQuestionGenerationPrompt(
     '이미 충분히 구체적이면 questions를 빈 배열로 반환하세요.',
     'id와 category는 영문 소문자와 언더스코어로 된 안정적인 식별자를 사용하세요.',
     '문맥상 추천할 선택지가 있으면 recommendedValue와 recommendedReason을 포함하세요.',
+    'recommendedValue는 반드시 해당 질문의 options 중 하나의 value를 그대로 복사하세요. label이나 새로운 값을 넣지 마세요.',
+    '추천할 선택지가 없다면 recommendedValue와 recommendedReason을 생략하거나 빈 문자열로 반환하세요.',
     '',
     `작업에 가장 적합한 대상을 다음 목록에서 하나 추천할 수 있습니다: ${targetList}`,
     '특정 대상이 더 적합하면 recommendedTargetId와 recommendedTargetReason을 반환하세요.',
@@ -96,6 +98,18 @@ function parseOption(value: unknown, questionId: string): QuestionOption {
   }
 }
 
+function resolveRecommendedValue(value: unknown, options: readonly QuestionOption[]): string | undefined {
+  const candidate = optionalString(value)
+  if (!candidate) return undefined
+  const exactMatch = options.find((option) => option.value === candidate)
+  if (exactMatch) return exactMatch.value
+
+  // 일부 AI 응답은 value 대신 화면에 보이는 label을 반환한다.
+  // 정확히 한 선택지를 식별할 수 있을 때만 복구하고, 나머지는 추천 없이 진행한다.
+  const labelMatches = options.filter((option) => option.label === candidate)
+  return labelMatches.length === 1 ? labelMatches[0].value : undefined
+}
+
 function parseQuestion(value: unknown): Question {
   const item = asRecord(value, '질문')
   const id = requiredString(item.id, '질문 id')
@@ -111,17 +125,14 @@ function parseQuestion(value: unknown): Question {
     throw invalidResponse(`${id} 질문에 중복된 선택지 값이 있습니다.`)
   }
 
-  const recommendedValue = optionalString(item.recommendedValue)
-  if (recommendedValue && !options.some((option) => option.value === recommendedValue)) {
-    throw invalidResponse(`${id} 질문의 추천값이 선택지에 없습니다.`)
-  }
+  const recommendedValue = resolveRecommendedValue(item.recommendedValue, options)
 
   return {
     id,
     text: requiredString(item.text, `${id} 질문 text`),
     category: optionalString(item.category),
     recommendedValue,
-    recommendedReason: optionalString(item.recommendedReason),
+    recommendedReason: recommendedValue ? optionalString(item.recommendedReason) : undefined,
     options,
   }
 }
